@@ -3,8 +3,6 @@ import SwiftUI
 struct BottomActionBar: View {
     @EnvironmentObject private var operations: OperationsEngine
     let activePane: PaneViewModel
-    let otherPane: PaneViewModel
-    let isDualPane: Bool
     let onNewFolder: () -> Void
     let onNewFile: () -> Void
     let onDelete: () -> Void
@@ -13,75 +11,66 @@ struct BottomActionBar: View {
     private var canOperate: Bool { hasSelection && !operations.isRunning }
 
     var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 4) {
-                button("action.copy", icon: "doc.on.doc", enabled: canOperate) {
-                    operations.copySelection(from: activePane, to: otherPane)
-                }
-                button("action.move", icon: "arrow.right.doc.on.doc", enabled: canOperate) {
-                    operations.moveSelection(from: activePane, to: otherPane)
-                }
-                button("action.newFolder", icon: "folder.badge.plus", enabled: !operations.isRunning, action: onNewFolder)
-                button("action.delete", icon: "trash", enabled: canOperate, role: .destructive, action: onDelete)
-                button("action.zip", icon: "doc.zipper", enabled: canOperate) {
-                    operations.zipSelection(in: activePane)
-                }
-                button("action.selectAll", icon: "checkmark.circle", enabled: !activePane.visibleItems.isEmpty && !operations.isRunning) {
-                    if activePane.selectedURLs.count >= activePane.visibleItems.count {
-                        activePane.clearSelection()
-                    } else {
-                        activePane.selectAllVisible()
-                    }
-                }
-                Menu {
-                    Button(action: onNewFile) {
-                        Label("action.newFile", systemImage: "doc.badge.plus")
-                    }
-                    Button {
-                        activePane.showFilter.toggle()
-                    } label: {
-                        Label("action.filter", systemImage: "magnifyingglass")
-                    }
-                } label: {
-                    VStack(spacing: 2) {
-                        Image(systemName: "ellipsis.circle")
-                            .font(.title3)
-                        Text("action.more")
-                            .font(.caption2)
-                            .lineLimit(1)
-                    }
-                    .frame(width: 64)
-                    .padding(.vertical, 6)
-                }
-                .disabled(operations.isRunning)
+        HStack(spacing: 4) {
+            button("action.copy", icon: "doc.on.doc", enabled: canOperate) {
+                CommandRouter.shared.copy()
             }
-            .padding(.horizontal, 8)
+            button("action.move", icon: "arrow.right.doc.on.doc", enabled: canOperate) {
+                CommandRouter.shared.move()
+            }
+            button("action.newFolder", icon: "folder.badge.plus", enabled: !operations.isRunning, action: onNewFolder)
+            button("action.delete", icon: "trash", enabled: canOperate, action: onDelete)
+            button("action.rename", icon: "pencil", enabled: canOperate) {
+                CommandRouter.shared.rename()
+            }
+            button("action.zip", icon: "doc.zipper", enabled: canOperate) {
+                OperationsEngine.shared.zipSelection(in: activePane)
+            }
+            button("action.preview", icon: "eye", enabled: canOperate) {
+                CommandRouter.shared.preview()
+            }
+            button("action.selectAll", icon: "checkmark.circle", enabled: !activePane.visibleItems.isEmpty && !operations.isRunning) {
+                CommandRouter.shared.selectAll()
+            }
+            Menu {
+                Button(NSLocalizedString("action.newFile", comment: ""), action: onNewFile)
+                Button(NSLocalizedString("action.info", comment: "")) { CommandRouter.shared.info() }
+                Button(NSLocalizedString("menu.toggleHidden", comment: "")) { CommandRouter.shared.toggleHidden() }
+            } label: {
+                bottomLabel(icon: "ellipsis.circle", titleKey: "action.more")
+            }
+            .disabled(operations.isRunning)
+            Spacer(minLength: 0)
         }
+        .padding(.horizontal, 8)
         .padding(.vertical, 4)
-        .background(Color(.secondarySystemBackground))
+        .background(Color(nsColor: .underPageBackgroundColor))
     }
 
     private func button(
         _ titleKey: LocalizedStringKey,
         icon: String,
         enabled: Bool,
-        role: ButtonRole? = nil,
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
-            VStack(spacing: 2) {
-                Image(systemName: icon)
-                    .font(.title3)
-                Text(titleKey)
-                    .font(.caption2)
-                    .lineLimit(1)
-            }
-            .frame(width: 64)
-            .padding(.vertical, 6)
-            .foregroundStyle(role == .destructive ? Color.red : Color.primary)
+            bottomLabel(icon: icon, titleKey: titleKey)
         }
         .buttonStyle(.borderless)
         .disabled(!enabled)
         .opacity(enabled ? 1 : 0.35)
+    }
+
+    private func bottomLabel(icon: String, titleKey: LocalizedStringKey) -> some View {
+        VStack(spacing: 2) {
+            Image(systemName: icon)
+                .font(.system(size: 14))
+            Text(titleKey)
+                .font(.caption2)
+                .lineLimit(1)
+        }
+        .frame(width: 60)
+        .padding(.vertical, 3)
+        .contentShape(Rectangle())
     }
 }

@@ -21,6 +21,20 @@
                ReferencedContainer = "container:FreeCommander.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "NO"
+            buildForProfiling = "NO"
+            buildForArchiving = "NO"
+            buildForAnalyzing = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "5B864F76211B7CF12315B112"
+               BuildableName = "FreeCommanderTests.xctest"
+               BlueprintName = "FreeCommanderTests"
+               ReferencedContainer = "container:FreeCommander.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
       </BuildActionEntries>
    </BuildAction>
    <TestAction
@@ -39,7 +53,20 @@
          </BuildableReference>
       </MacroExpansion>
       <Testables>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "5B864F76211B7CF12315B112"
+               BuildableName = "FreeCommanderTests.xctest"
+               BlueprintName = "FreeCommanderTests"
+               ReferencedContainer = "container:FreeCommander.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
+      <CommandLineArguments>
+      </CommandLineArguments>
    </TestAction>
    <LaunchAction
       buildConfiguration = "Debug"

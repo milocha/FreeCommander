@@ -1,22 +1,26 @@
+import AppKit
 import Foundation
 
 /// Stan jednego panelu (w stylu Total Commandera): bieżący katalog, zawartość,
-/// zaznaczenie, sortowanie i filtr. Panel sam zarządza security scope swojej
-/// lokalizacji głównej.
+/// zaznaczenie, sortowanie i filtr. Na macOS (bez sandboxa) panel może wskazywać
+/// dowolny katalog na dysku.
 @MainActor
 final class PaneViewModel: ObservableObject, Identifiable {
     let paneIndex: Int
     nonisolated var id: Int { paneIndex }
 
-    @Published private(set) var location: PaneLocation
     @Published private(set) var directory: URL
     @Published private(set) var items: [FileItem] = []
     @Published var selectedURLs: Set<URL> = []
     @Published private(set) var isLoading = false
     @Published var errorMessage: String?
-    @Published var previewURL: URL?
     @Published var filterText = ""
     @Published var showFilter = false
+    /// Żądania dialogów ustawiane też z zewnątrz (klawiatura, menu kontekstowe).
+    @Published var previewURL: URL?
+    @Published var infoItem: FileItem?
+    @Published var renameItem: FileItem?
+    @Published var deleteRequest: FileItem?
     @Published var sortField: SortField {
         didSet { persistSort() }
     }
@@ -25,63 +29,69 @@ final class PaneViewModel: ObservableObject, Identifiable {
     }
 
     private var generation = 0
-    private var acquiredScopeURL: URL?
 
-    init(paneIndex: Int, location: PaneLocation) {
+    init(paneIndex: Int) {
         self.paneIndex = paneIndex
-        self.location = location
         let stored = UserDefaults.standard.string(forKey: "pane\(paneIndex).sort") ?? "name|asc"
         let parts = stored.split(separator: "|").map(String.init)
         self.sortField = SortField(rawValue: parts.first ?? "name") ?? .name
         self.sortDirection = SortDirection.parse(parts.last)
-        self.directory = location.url
-        acquireScope()
-        reload()
-    }
-
-    deinit {
-        if let url = acquiredScopeURL {
-            ScopeAccess.shared.release(url)
+        if let path = UserDefaults.standard.string(forKey: "pane\(paneIndex).path"),
+           FileManager.default.fileExists(atPath: path) {
+            self.directory = URL(fileURLWithPath: path, isDirectory: true)
+        } else {
+            self.directory = FileManager.default.homeDirectoryForCurrentUser
         }
+        reload()
     }
 
     // MARK: - Nawigacja
 
-    var rootURL: URL { location.url }
-
     var canGoUp: Bool {
-        directory.standardizedFileURL != rootURL.standardizedFileURL
+        directory.standardizedFileURL.path != "/"
     }
 
-    func navigate(to url: URL, location newLocation: PaneLocation) {
+    func navigate(to url: URL) {
+        var isDirectory: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory), isDirectory.boolValue else {
+            errorMessage = String(
+                format: NSLocalizedString("error.notDirectory", comment: ""),
+                url.path)
+            return
+        }
         let newURL = url.standardizedFileURL
-        if newURL == directory.standardizedFileURL && newLocation == location {
+        if newURL == directory.standardizedFileURL {
             reload()
             return
         }
-        releaseScope()
-        location = newLocation
         directory = newURL
         selectedURLs = []
-        previewURL = nil
         filterText = ""
         errorMessage = nil
-        UserDefaults.standard.set(newLocation.storageKey, forKey: "pane\(paneIndex).location")
-        acquireScope()
+        UserDefaults.standard.set(newURL.path, forKey: "pane\(paneIndex).path")
         reload()
     }
 
     func goUp() {
         guard canGoUp else { return }
-        navigate(to: directory.deletingLastPathComponent(), location: location)
+        navigate(to: directory.deletingLastPathComponent())
     }
 
     func open(_ item: FileItem) {
         if item.isDirectory {
-            navigate(to: item.url, location: location)
+            navigate(to: item.url)
         } else {
-            previewURL = item.url
+            NSWorkspace.shared.open(item.url)
         }
+    }
+
+    func revealInFinder(_ item: FileItem) {
+        NSWorkspace.shared.activateFileViewerSelecting([item.url])
+    }
+
+    func requestPreview(_ item: FileItem) {
+        guard !item.isDirectory else { return }
+        previewURL = item.url
     }
 
     // MARK: - Zawartość i zaznaczenie
@@ -121,8 +131,13 @@ final class PaneViewModel: ObservableObject, Identifiable {
         selectedURLs = []
     }
 
+    var fileCount: Int { items.filter { !$0.isDirectory }.count }
+    var directoryCount: Int { items.filter { $0.isDirectory }.count }
+
     var statusSummary: String {
-        String(format: NSLocalizedString("status.items", comment: ""), items.count)
+        String(
+            format: NSLocalizedString("status.itemsMac", comment: ""),
+            fileCount, directoryCount)
     }
 
     var selectionSummary: String {
@@ -211,19 +226,6 @@ final class PaneViewModel: ObservableObject, Identifiable {
             return nil
         }
         return name
-    }
-
-    private func acquireScope() {
-        guard case .bookmark(let id) = location, let root = BookmarkStore.shared.resolve(id) else { return }
-        ScopeAccess.shared.acquire(root)
-        acquiredScopeURL = root
-    }
-
-    private func releaseScope() {
-        if let url = acquiredScopeURL {
-            ScopeAccess.shared.release(url)
-            acquiredScopeURL = nil
-        }
     }
 
     private func persistSort() {

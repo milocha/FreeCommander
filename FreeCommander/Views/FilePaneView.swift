@@ -1,4 +1,3 @@
-import QuickLook
 import SwiftUI
 
 struct FilePaneView: View {
@@ -8,78 +7,136 @@ struct FilePaneView: View {
     @ObservedObject var pane: PaneViewModel
     let isActive: Bool
     let onActivate: () -> Void
-    let onOpenRoots: () -> Void
-    let onRename: (FileItem) -> Void
 
-    @State private var deleteTarget: FileItem?
-    @State private var infoItem: FileItem?
-    @State private var shareItem: ShareItem?
+    @State private var pathText = ""
+    @FocusState private var pathFocused: Bool
+    @State private var renameText = ""
 
     var body: some View {
         VStack(spacing: 0) {
-            header
+            pathBar
             if pane.showFilter {
                 filterField
             }
             if let error = pane.errorMessage {
                 errorBanner(error)
             }
-            content
+            fileList
             statusBar
         }
-        .background(isActive ? Color.accentColor.opacity(0.04) : Color.clear)
+        .background(isActive ? Color.accentColor.opacity(0.05) : Color.clear)
         .overlay(
             Rectangle()
-                .strokeBorder(isActive ? Color.accentColor.opacity(0.7) : Color.clear, lineWidth: 2)
+                .strokeBorder(isActive ? Color.accentColor.opacity(0.7) : Color.primary.opacity(0.08), lineWidth: 1.5)
         )
-        .contentShape(Rectangle())
-        .onTapGesture { onActivate() }
-        .quickLookPreview($pane.previewURL)
-        .sheet(item: $infoItem) { item in
+        .onAppear {
+            pathText = pane.directory.path(percentEncoded: false)
+        }
+        .onChange(of: pane.directory) { newValue in
+            if !pathFocused {
+                pathText = newValue.path(percentEncoded: false)
+            }
+        }
+        .onChange(of: pane.renameItem) { item in
+            if let item {
+                renameText = item.name
+            }
+        }
+        .sheet(item: infoBinding) { item in
             InfoSheet(item: item)
         }
-        .sheet(item: $shareItem) { wrapper in
-            ShareSheet(items: [wrapper.url])
+        .sheet(item: previewBinding) { wrapper in
+            QuickLookView(url: wrapper.url)
+                .frame(width: 780, height: 540)
+        }
+        .alert("action.rename", isPresented: Binding(
+            get: { pane.renameItem != nil },
+            set: { if !$0 { pane.renameItem = nil } })) {
+            TextField("prompt.newName", text: $renameText)
+            Button("common.save") {
+                if let target = pane.renameItem {
+                    pane.rename(target, to: renameText)
+                }
+            }
+            Button("common.cancel", role: .cancel) {}
         }
         .confirmationDialog(
             "confirm.delete.single.title",
             isPresented: Binding(
-                get: { deleteTarget != nil },
-                set: { if !$0 { deleteTarget = nil } }),
+                get: { pane.deleteRequest != nil },
+                set: { if !$0 { pane.deleteRequest = nil } }),
             titleVisibility: .visible) {
-            if let target = deleteTarget {
-                Button("action.delete", role: .destructive) {
-                    operations.delete([target], in: pane)
+            Button("action.trash") {
+                if let target = pane.deleteRequest {
+                    operations.delete([target], in: pane, mode: .trash)
+                }
+            }
+            Button("action.deletePermanent", role: .destructive) {
+                if let target = pane.deleteRequest {
+                    operations.delete([target], in: pane, mode: .permanent)
                 }
             }
             Button("common.cancel", role: .cancel) {}
         } message: {
             Text(String(
                 format: NSLocalizedString("confirm.delete.single.message", comment: ""),
-                deleteTarget?.name ?? ""))
+                pane.deleteRequest?.name ?? ""))
         }
     }
 
-    // MARK: - Nagłówek panelu
+    private var infoBinding: Binding<FileItem?> {
+        Binding(
+            get: { pane.infoItem },
+            set: { pane.infoItem = $0 })
+    }
 
-    private var header: some View {
-        HStack(spacing: 10) {
-            Text(String(format: NSLocalizedString("pane.title", comment: ""), pane.paneIndex + 1))
-                .font(.caption.weight(.bold))
-                .foregroundStyle(isActive ? Color.accentColor : Color.secondary)
+    private var previewBinding: Binding<PreviewItem?> {
+        Binding(
+            get: { pane.previewURL.map(PreviewItem.init) },
+            set: { pane.previewURL = $0?.url })
+    }
 
-            Button(action: onOpenRoots) {
-                HStack(spacing: 4) {
-                    Image(systemName: locationIcon)
-                    Text(pane.directory.lastPathComponent)
-                        .lineLimit(1)
-                        .truncationMode(.head)
+    // MARK: - Belka ścieżki
+
+    private var pathBar: some View {
+        HStack(spacing: 6) {
+            Menu {
+                Section(NSLocalizedString("roots.favorites", comment: "")) {
+                    ForEach(SystemLocations.favorites) { favorite in
+                        Button(favorite.name) {
+                            pane.navigate(to: favorite.url)
+                        }
+                    }
                 }
-                .font(.subheadline)
+                Section(NSLocalizedString("roots.volumes", comment: "")) {
+                    ForEach(SystemLocations.mountedVolumes()) { volume in
+                        Button(volume.name) {
+                            pane.navigate(to: volume.url)
+                        }
+                    }
+                }
+            } label: {
+                Image(systemName: "internaldrive")
             }
-            .buttonStyle(.borderless)
+            .menuStyle(.borderlessButton)
+            .fixedSize()
 
-            Spacer(minLength: 4)
+            TextField("path.placeholder", text: $pathText)
+                .textFieldStyle(.roundedBorder)
+                .font(.system(size: 11, design: .monospaced))
+                .focused($pathFocused)
+                .onSubmit {
+                    var isDirectory: ObjCBool = false
+                    let expanded = (pathText as NSString).expandingTildeInPath
+                    if FileManager.default.fileExists(atPath: expanded, isDirectory: &isDirectory) {
+                        pane.navigate(to: URL(fileURLWithPath: expanded, isDirectory: isDirectory.boolValue))
+                    } else {
+                        pane.errorMessage = String(
+                            format: NSLocalizedString("error.listing", comment: ""),
+                            pathText, NSLocalizedString("error.noSuchPath", comment: ""))
+                    }
+                }
+                .onTapGesture { onActivate() }
 
             Button {
                 pane.goUp()
@@ -87,33 +144,6 @@ struct FilePaneView: View {
                 Image(systemName: "chevron.up")
             }
             .disabled(!pane.canGoUp)
-            .buttonStyle(.borderless)
-
-            Menu {
-                Picker("sort.title", selection: $pane.sortField) {
-                    ForEach(SortField.allCases) { field in
-                        Text(field.titleKey).tag(field)
-                    }
-                }
-                Button {
-                    pane.sortDirection = pane.sortDirection.toggled
-                } label: {
-                    Label(pane.sortDirection.titleKey, systemImage: pane.sortDirection.systemImage)
-                }
-                Divider()
-                Button {
-                    pane.selectAllVisible()
-                } label: {
-                    Label("action.selectAll", systemImage: "checkmark.circle")
-                }
-                Button {
-                    pane.clearSelection()
-                } label: {
-                    Label("action.deselectAll", systemImage: "circle")
-                }
-            } label: {
-                Image(systemName: "arrow.up.arrow.down")
-            }
             .buttonStyle(.borderless)
 
             Button {
@@ -132,16 +162,8 @@ struct FilePaneView: View {
             }
             .buttonStyle(.borderless)
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
-    }
-
-    private var locationIcon: String {
-        switch pane.location {
-        case .documents: return "internaldrive"
-        case .temporary: return "clock"
-        case .bookmark: return "folder"
-        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 5)
     }
 
     private var filterField: some View {
@@ -150,7 +172,8 @@ struct FilePaneView: View {
                 .foregroundStyle(.secondary)
                 .font(.caption)
             TextField("action.filter", text: $pane.filterText)
-                .textFieldStyle(.plain)
+                .textFieldStyle(.roundedBorder)
+                .font(.caption)
                 .autocorrectionDisabled()
             Button {
                 pane.filterText = ""
@@ -161,9 +184,9 @@ struct FilePaneView: View {
             .buttonStyle(.borderless)
             .opacity(pane.filterText.isEmpty ? 0 : 1)
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
-        .background(Color(.secondarySystemBackground))
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(Color(nsColor: .controlBackgroundColor))
     }
 
     private func errorBanner(_ message: String) -> some View {
@@ -172,7 +195,7 @@ struct FilePaneView: View {
                 .foregroundStyle(.yellow)
             Text(message)
                 .font(.caption)
-                .lineLimit(3)
+                .lineLimit(2)
             Spacer()
             Button {
                 pane.errorMessage = nil
@@ -181,126 +204,39 @@ struct FilePaneView: View {
             }
             .buttonStyle(.borderless)
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
         .background(Color.red.opacity(0.12))
     }
 
     // MARK: - Lista
 
-    @ViewBuilder
-    private var content: some View {
-        if pane.items.isEmpty && !pane.isLoading {
-            ContentUnavailableView {
-                Label("empty.title", systemImage: "folder")
-            } description: {
-                Text("empty.hint")
-            }
-        } else if pane.visibleItems.isEmpty && !pane.filterText.isEmpty {
-            ContentUnavailableView {
-                Label("empty.filter", systemImage: "magnifyingglass")
-            } description: {
-                Text("empty.filterHint")
-            }
-        } else {
-            List {
-                ForEach(pane.visibleItems) { item in
-                    row(for: item)
+    private var fileList: some View {
+        ZStack {
+            FileListView(
+                pane: pane,
+                onActivate: onActivate,
+                onOpen: { pane.open($0) })
+            if !pane.isLoading && pane.items.isEmpty {
+                VStack(spacing: 6) {
+                    Image(systemName: "folder")
+                        .font(.system(size: 32))
+                        .foregroundStyle(.tertiary)
+                    Text("empty.title")
+                        .foregroundStyle(.secondary)
                 }
-            }
-            .listStyle(.plain)
-            .overlay {
-                if pane.isLoading && pane.items.isEmpty {
-                    ProgressView()
-                }
+                .allowsHitTesting(false)
             }
         }
+        .contentShape(Rectangle())
+        .onTapGesture { onActivate() }
     }
 
-    private func row(for item: FileItem) -> some View {
-        let isSelected = pane.selectedURLs.contains(item.url)
-        return FileRowView(item: item, isSelected: isSelected)
-            .contentShape(Rectangle())
-            .onTapGesture {
-                onActivate()
-                if pane.selectedURLs.isEmpty {
-                    pane.open(item)
-                } else {
-                    pane.toggleSelection(item)
-                }
-            }
-            .listRowBackground(isSelected ? Color.accentColor.opacity(0.15) : Color.clear)
-            .listRowSeparator(.hidden)
-            .contextMenu {
-                if item.isDirectory {
-                    Button {
-                        pane.open(item)
-                    } label: {
-                        Label("action.openFolder", systemImage: "folder")
-                    }
-                } else {
-                    Button {
-                        pane.previewURL = item.url
-                    } label: {
-                        Label("action.preview", systemImage: "eye")
-                    }
-                }
-                Button {
-                    pane.toggleSelection(item)
-                } label: {
-                    Label("action.select", systemImage: isSelected ? "circle" : "checkmark.circle")
-                }
-                Button {
-                    pane.duplicate(item)
-                } label: {
-                    Label("action.duplicate", systemImage: "plus.square.on.square")
-                }
-                Button {
-                    onRename(item)
-                } label: {
-                    Label("action.rename", systemImage: "pencil")
-                }
-                Button {
-                    operations.zipSelection(in: pane)
-                } label: {
-                    Label("action.zip", systemImage: "doc.zipper")
-                }
-                .disabled(pane.selectedURLs.isEmpty)
-                Button {
-                    pane.selectedURLs.insert(item.url)
-                    operations.zipSelection(in: pane)
-                } label: {
-                    Label("action.zipSingle", systemImage: "doc.zipper")
-                }
-                if item.isArchive {
-                    Button {
-                        operations.unzip(item, in: pane)
-                    } label: {
-                        Label("action.unzip", systemImage: "arrow.down.doc")
-                    }
-                }
-                Button {
-                    infoItem = item
-                } label: {
-                    Label("action.info", systemImage: "info.circle")
-                }
-                Button {
-                    shareItem = ShareItem(url: item.url)
-                } label: {
-                    Label("action.share", systemImage: "square.and.arrow.up")
-                }
-                Divider()
-                Button(role: .destructive) {
-                    deleteTarget = item
-                } label: {
-                    Label("action.delete", systemImage: "trash")
-                }
-            }
-    }
+    // MARK: - Pasek statusu
 
     private var statusBar: some View {
         HStack {
-            Text(pane.statusSummary)
+            Text(pane.isLoading ? "…" : pane.statusSummary)
             Spacer()
             if !pane.selectedURLs.isEmpty {
                 Text(pane.selectionSummary)
@@ -309,13 +245,13 @@ struct FilePaneView: View {
         }
         .font(.caption)
         .foregroundStyle(.secondary)
-        .padding(.horizontal, 10)
-        .padding(.vertical, 4)
-        .background(Color(.secondarySystemBackground))
+        .padding(.horizontal, 8)
+        .padding(.vertical, 3)
+        .background(Color(nsColor: .underPageBackgroundColor))
     }
 }
 
-struct ShareItem: Identifiable {
+struct PreviewItem: Identifiable {
     let url: URL
     var id: URL { url }
 }

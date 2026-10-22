@@ -8,13 +8,13 @@ struct InfoSheet: View {
     @State private var containedCount: Int?
 
     var body: some View {
-        NavigationStack {
-            List {
+        VStack(spacing: 0) {
+            Form {
                 Section {
-                    LabeledRow(label: NSLocalizedString("info.name", comment: ""), value: item.name)
-                    LabeledRow(
-                        label: NSLocalizedString("info.type", comment: ""),
-                        value: item.isDirectory
+                    row(NSLocalizedString("info.name", comment: ""), item.name)
+                    row(
+                        NSLocalizedString("info.type", comment: ""),
+                        item.isDirectory
                             ? NSLocalizedString("info.kindFolder", comment: "")
                             : NSLocalizedString("info.kindFile", comment: ""))
                     sizeRow
@@ -23,22 +23,30 @@ struct InfoSheet: View {
                     }
                 }
                 Section {
-                    LabeledRow(
-                        label: NSLocalizedString("info.modified", comment: ""),
-                        value: item.modificationDate.map(Formatters.date) ?? "—")
-                    LabeledRow(
-                        label: NSLocalizedString("info.created", comment: ""),
-                        value: item.creationDate.map(Formatters.date) ?? "—")
+                    row(
+                        NSLocalizedString("info.modified", comment: ""),
+                        item.modificationDate.map(Formatters.date) ?? "—")
+                    row(
+                        NSLocalizedString("info.created", comment: ""),
+                        item.creationDate.map(Formatters.date) ?? "—")
                 }
-                Section("info.path") {
+                Section(NSLocalizedString("info.path", comment: "")) {
                     Text(item.url.path(percentEncoded: false))
-                        .font(.caption)
+                        .font(.system(size: 11, design: .monospaced))
                         .textSelection(.enabled)
                 }
             }
-            .navigationTitle("info.title")
-            .navigationBarTitleDisplayMode(.inline)
+            .formStyle(.grouped)
+            HStack {
+                Spacer()
+                Button("common.close") {
+                    NSApp.keyWindow?.performClose(nil)
+                }
+                .keyboardShortcut(.cancelAction)
+            }
+            .padding(12)
         }
+        .frame(width: 420, height: 380)
         .task {
             guard item.isDirectory else { return }
             computingSize = true
@@ -55,39 +63,35 @@ struct InfoSheet: View {
     @ViewBuilder
     private var sizeRow: some View {
         if item.isDirectory {
-            LabeledRow(
-                label: NSLocalizedString("info.size", comment: ""),
-                value: computingSize
+            row(
+                NSLocalizedString("info.size", comment: ""),
+                computingSize
                     ? NSLocalizedString("info.dirSizeComputing", comment: "")
                     : Formatters.size(directorySize ?? 0))
         } else {
-            LabeledRow(
-                label: NSLocalizedString("info.size", comment: ""),
-                value: Formatters.size(item.size ?? 0))
+            row(
+                NSLocalizedString("info.size", comment: ""),
+                Formatters.size(item.size ?? 0))
         }
     }
 
     @ViewBuilder
     private var countRow: some View {
         if let count = containedCount {
-            LabeledRow(
-                label: NSLocalizedString("info.contents", comment: ""),
-                value: String(format: NSLocalizedString("info.itemsCount", comment: ""), count))
+            row(
+                NSLocalizedString("info.contents", comment: ""),
+                String(format: NSLocalizedString("info.itemsCount", comment: ""), count))
         }
     }
-}
 
-private struct LabeledRow: View {
-    let label: String
-    let value: String
-
-    var body: some View {
+    private func row(_ label: String, _ value: String) -> some View {
         HStack(alignment: .firstTextBaseline) {
             Text(label)
+                .foregroundStyle(.secondary)
             Spacer()
             Text(value)
-                .foregroundStyle(.secondary)
                 .multilineTextAlignment(.trailing)
+                .textSelection(.enabled)
         }
     }
 }

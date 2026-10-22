@@ -1,24 +1,28 @@
-/* FreeCommander — English */
+/* FreeCommander — English (macOS) */
 
 "app.title" = "FreeCommander";
-"pane.title" = "Pane %d";
-"pane.switcher" = "Active pane";
+"pane.activeHint" = "Active: Pane %d";
 
 /* Actions */
 "action.copy" = "Copy";
 "action.move" = "Move";
 "action.delete" = "Delete";
+"action.trash" = "Move to Trash";
+"action.deletePermanent" = "Delete permanently";
 "action.newFolder" = "New folder";
 "action.newFile" = "New text file";
 "action.rename" = "Rename";
 "action.duplicate" = "Duplicate";
 "action.info" = "Info";
-"action.share" = "Share";
 "action.zip" = "Zip";
-"action.zipSingle" = "Zip only this item";
+"action.zipSelection" = "Zip selection";
 "action.unzip" = "Extract";
+"action.open" = "Open";
 "action.openFolder" = "Open folder";
 "action.preview" = "Preview";
+"action.revealInFinder" = "Reveal in Finder";
+"action.copyToOther" = "Copy to other pane";
+"action.moveToOther" = "Move to other pane";
 "action.select" = "Select";
 "action.selectAll" = "Select all";
 "action.deselectAll" = "Deselect all";
@@ -26,51 +30,56 @@
 "action.more" = "More";
 "action.create" = "Create";
 "action.save" = "Save";
+"action.refresh" = "Refresh";
 
 /* Common */
 "common.cancel" = "Cancel";
 "common.ok" = "OK";
 "common.close" = "Close";
 
-/* Sorting */
-"sort.title" = "Sorting";
+/* Sorting and columns */
 "sort.name" = "Name";
 "sort.date" = "Modified";
 "sort.size" = "Size";
-"sort.type" = "Type";
 "sort.ascending" = "Ascending";
 "sort.descending" = "Descending";
+"col.name" = "Name";
+"col.size" = "Size";
+"col.date" = "Modified";
+"dir.marker" = "DIR";
 
-/* Settings */
-"settings.title" = "Settings";
-"settings.listSection" = "File lists";
-"settings.showHidden" = "Show hidden files";
-"settings.directoriesFirst" = "Directories first";
-"settings.about" = "About";
-"info.version" = "Version";
-"settings.note" = "The app can browse its own Documents folder (also visible in the Files app) and any locations shared through Files that you add as bookmarks. iOS does not allow browsing the whole device filesystem.";
+/* Menus */
+"menu.files" = "Files";
+"menu.go" = "Go";
+"menu.view" = "View";
+"menu.copy" = "Copy to other pane (F5)";
+"menu.move" = "Move to other pane (F6)";
+"menu.newFolder" = "New folder (F7)";
+"menu.rename" = "Rename (F2)";
+"menu.delete" = "Delete selection (F8)";
+"menu.preview" = "Preview (Space)";
+"menu.open" = "Open (Enter)";
+"menu.toggleHidden" = "Show/hide hidden files";
 
 /* Locations */
-"roots.title" = "Locations";
-"roots.builtin" = "Built-in";
-"roots.documents" = "Documents";
-"roots.temporary" = "Temporary";
-"roots.bookmarks" = "Bookmarks (from Files app)";
-"roots.add" = "Add location from Files app…";
-"roots.noBookmarks" = "No bookmarks yet. Add a folder (e.g. iCloud Drive) using the button above.";
-"roots.unavailable" = "Location “%@” is unavailable. Please add it again.";
+"roots.favorites" = "Favorites";
+"roots.volumes" = "Volumes";
+"fav.home" = "Home";
+"fav.root" = "Startup disk (/)";
+"fav.applications" = "Applications";
+"fav.desktop" = "Desktop";
+"fav.documents" = "Documents";
+"fav.downloads" = "Downloads";
+"path.placeholder" = "Path (Return to go)";
 
 /* Empty states */
 "empty.title" = "Empty";
-"empty.hint" = "No files in this folder. Send files here via Share → Save to Files (choose FreeCommander), connect the device to Finder (File Sharing), or add a location from the Files app (bookmark icon).";
-"empty.filter" = "No results";
-"empty.filterHint" = "No file in this folder matches the filter.";
 
 /* Confirmations */
-"confirm.delete.title" = "Delete selected items?";
-"confirm.delete.message" = "Items to be permanently deleted: %d.";
-"confirm.delete.single.title" = "Delete item?";
-"confirm.delete.single.message" = "Item “%@” will be permanently deleted.";
+"confirm.delete.title" = "What to do with selected items?";
+"confirm.delete.message" = "Number of items: %d.";
+"confirm.delete.single.title" = "What to do with this item?";
+"confirm.delete.single.message" = "Item “%@” will be deleted.";
 
 /* Prompts */
 "prompt.folderName" = "Folder name";
@@ -81,6 +90,7 @@
 "op.copying" = "Copying";
 "op.moving" = "Moving";
 "op.deleting" = "Deleting";
+"op.trashing" = "Moving to Trash";
 "op.zipping" = "Zipping…";
 "op.unzipping" = "Extracting…";
 "op.zipDone" = "Archive created: %@";
@@ -88,11 +98,10 @@
 "archive.defaultName" = "Archive";
 
 /* Pane status bar */
-"status.items" = "%d items";
+"status.itemsMac" = "%d files · %d folders";
 "status.selected" = "%d selected · %@";
 
 /* File info */
-"info.title" = "Info";
 "info.name" = "Name";
 "info.type" = "Type";
 "info.kindFolder" = "Folder";
@@ -107,6 +116,8 @@
 
 /* Errors */
 "error.title" = "Error";
-"error.listing" = "Cannot read folder “%@”: %@";
+"error.listing" = "Cannot read “%@”: %@";
 "error.nameInvalid" = "Invalid name (empty or contains “/”).";
 "error.intoSelf" = "Cannot move a folder into its own subfolder.";
+"error.notDirectory" = "Not a directory: %@";
+"error.noSuchPath" = "path does not exist";

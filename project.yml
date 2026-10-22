@@ -2,7 +2,7 @@ name: FreeCommander
 options:
   bundleIdPrefix: pl.mkrolikowski
   deploymentTarget:
-    iOS: "17.0"
+    macOS: "14.0"
   createIntermediateGroups: true
 packages:
   ZIPFoundation:
@@ -13,13 +13,13 @@ settings:
     SWIFT_VERSION: "5.0"
     MARKETING_VERSION: "0.1.0"
     CURRENT_PROJECT_VERSION: "1"
-    TARGETED_DEVICE_FAMILY: "1,2"
     CODE_SIGN_STYLE: Automatic
+    CODE_SIGN_IDENTITY: "-"
     DEVELOPMENT_LANGUAGE: pl
 targets:
   FreeCommander:
     type: application
-    platform: iOS
+    platform: macOS
     sources:
       - path: FreeCommander
     dependencies:
@@ -31,22 +31,29 @@ targets:
         CFBundleDisplayName: FreeCommander
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
-        UILaunchScreen: {}
-        UIFileSharingEnabled: true
-        LSSupportsOpeningDocumentsInPlace: true
-        UISupportedInterfaceOrientations:
-          - UIInterfaceOrientationPortrait
-          - UIInterfaceOrientationLandscapeLeft
-          - UIInterfaceOrientationLandscapeRight
-        UISupportedInterfaceOrientations~ipad:
-          - UIInterfaceOrientationPortrait
-          - UIInterfaceOrientationPortraitUpsideDown
-          - UIInterfaceOrientationLandscapeLeft
-          - UIInterfaceOrientationLandscapeRight
+        LSApplicationCategoryType: public.app-category.file-management
+        LSMinimumSystemVersion: "14.0"
+  FreeCommanderTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: Tests
+    dependencies:
+      - target: FreeCommander
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/FreeCommander.app/Contents/MacOS/FreeCommander"
+        BUNDLE_LOADER: "$(TEST_HOST)"
 schemes:
   FreeCommander:
     build:
       targets:
         FreeCommander: all
+        FreeCommanderTests: [test]
     run:
       config: Debug
+    test:
+      config: Debug
+      targets:
+        - FreeCommanderTests

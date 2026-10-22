@@ -1,90 +1,108 @@
-# FreeCommander (iOS)
+# FreeCommander (macOS)
 
-Darmowy, dwupanelowy menedżer plików na iPhone'a i iPada w duchu **Total Commandera**:
-dwa panele, zaznaczanie, kopiowanie/przenoszenie między panelami, ZIP, podgląd QuickLook.
+Darmowy, dwupanelowy menedżer plików na macOS w duchu **Total Commandera**:
+dwa panele obok siebie, klawisze F5/F6/F7/F8, zaznaczanie, kopiowanie i przenoszenie
+między panelami, ZIP, Quick Look, Kosz. Aplikacja **nie jest sandboxowana**, więc widzi
+cały dysk — jak Total Commander na Windows.
 
-![iPad — tryb dwupanelowy](docs/screenshot-ipad-dualpane.png)
+![FreeCommander na macOS](docs/screenshot-macos.png)
 
 ## Funkcje (v0.1)
 
-- **Dwa panele** jak w Total Commanderze: iPad — obok siebie, iPhone — przełącznik „Panel 1 / Panel 2".
-  Kliknięcie panelu aktywuje go (niebieska ramka); operacje działają **z aktywnego panelu do drugiego**.
-- **Operacje**: kopiuj, przenieś, usuń (z potwierdzeniem), zmień nazwę, duplikuj, nowy folder,
-  nowy plik tekstowy, zaznacz wszystko/odznacz.
-- **ZIP**: spakuj zaznaczenie (ZIPFoundation), rozpakuj archiwum `.zip`.
-- **Nawigacja**: poziom wyżej, lista lokalizacji (zakładki), sortowanie (nazwa/data/rozmiar/typ, rosnąco/malejąco,
-  katalogi najpierw), filtr bieżącego katalogu, ukryte pliki (ustawienie).
-- **Podgląd**: QuickLook po kliknięciu pliku; Udostępnij (sheet) z menu kontekstowego.
-- **Informacje o pliku**: rozmiar (dla folderów — liczony rekursywnie), daty, ścieżka, liczba elementów.
-- **Zakładki z aplikacji Pliki** (security-scoped bookmarks) — np. iCloud Drive, pamięć zewnętrzna.
-- **Katalog Dokumenty aplikacji jest widoczny w aplikacji Pliki** (`UIFileSharingEnabled`) — także w Finderze
-  po podłączeniu kabla („Udostępnianie plików").
-- Języki: polski i angielski (`Localizable.strings`).
-
-## Ograniczenie iOS (ważne!)
-
-iOS jest silnie odseparowany (sandbox) — **aplikacja nie może przeglądać całego systemu plików urządzenia**
-jak Total Commander na Windowsie czy Androidzie. Źródła plików, które pozostają:
-
-1. katalog Dokumenty aplikacji (pełny odczyt/zapis, widoczny w Plikach i Finderze),
-2. katalogi udostępniane przez aplikację Pliki dodane jako zakładki (iCloud Drive, dostawcy zewnętrzni, USB/SMB w Plikach),
-3. pliki przekazane przez „Udostępnij → Zapisz do plików" lub AirDrop,
-4. w przyszłości: własne implementacje sieciowe (SMB/FTP/SFTP/WebDAV) — patrz mapa drogowa.
+- **Dwa niezależne panele** z pełnym dostępem do systemu plików (piaskownica wyłączona).
+  Kliknięcie panelu (albo zmiana zaznaczenia w nim) aktywuje go — operacje idą
+  **z aktywnego panelu do drugiego**. U góry widać „Aktywny: Panel N".
+- **Klawisze jak w Total Commanderze** (globalnie w oknie, poza edycją pól tekstowych):
+  | Klawisz | Akcja |
+  |---|---|
+  | F5 | kopiuj zaznaczenie do drugiego panelu |
+  | F6 | przenieś zaznaczenie do drugiego panelu |
+  | F7 | nowy folder |
+  | F8 | usuń (do Kosza lub trwale — dialog) |
+  | F2 | zmień nazwę |
+  | Tab | przełącz aktywny panel |
+  | Enter | otwórz (katalog wejdź / plik domyślną aplikacją) |
+  | Backspace | poziom wyżej |
+  | Space | podgląd Quick Look |
+  | Cmd+A | zaznacz wszystko |
+  | Cmd+Shift+. | pokaż/ukryj pliki ukryte |
+- **Natywna tabela plików (NSTableView)**: wielokrotne zaznaczanie cmd/shift, dwuklik
+  otwiera, kliknięcie nagłówka sortuje (Nazwa/Rozmiar/Data), ikony plików jak w Finderze,
+  sortowanie „katalogi najpierw", stabilny remis po nazwie.
+- **Menu kontekstowe** (prawy przycisk): otwórz, podgląd, Pokaż w Finderze, kopiuj/przenieś
+  do drugiego panelu, zmień nazwę, duplikuj, informacje, spakuj/rozpakuj, Kosz, usuń trwale.
+- **Operacje wsadowe z postępem**: kopiowanie/przenoszenie/usuwanie item-po-itemie
+  z licznikiem, konflikty nazw rozwiązane automatycznie („nazwa (2).ext"),
+  blokada przenoszenia folderu do jego własnego podfolderu.
+- **ZIP** (ZIPFoundation): pakowanie zaznaczenia (wiele elementów → folder-koperta w archiwum),
+  rozpakowywanie. **Kosz** domyślnie, usuwanie trwałe na życzenie.
+- **Belka ścieżki**: edytowalna ścieżka (Return = przejdź, obsługa `~`), menu Ulubione
+  (Dom, Dysk startowy, Aplikacje, Pulpit, Dokumenty, Pobrane) i **Woluminy** (dyski montowane).
+- **Podgląd Quick Look** (ten sam silnik co spacja w Finderze), Informacje o pliku
+  (rozmiar folderu liczony rekursywnie, daty, ścieżka).
+- **Filtr** bieżącego katalogu, paski statusu paneli („N plików · M kat.", zaznaczenie + rozmiar).
+- Stan paneli, sortowanie i ukryte pliki zapamiętywane między uruchomieniami. Języki: **PL + EN**.
 
 ## Budowanie i uruchamianie
 
-Wymagany Xcode (projekt generowany przez [xcodegen](https://github.com/yonaskolb/XcodeGen)):
+Wymagany Xcode (projekt generowany z [xcodegen](https://github.com/yonaskolb/XcodeGen)):
 
 ```bash
 brew install xcodegen
 xcodegen generate                      # tworzy FreeCommander.xcodeproj z project.yml
-open FreeCommander.xcodeproj           # w Xcode: ⌘R na symulatorze
+open FreeCommander.xcodeproj           # w Xcode: ⌘R
 ```
 
-Build z CLI (symulator):
+Build i testy z CLI:
 
 ```bash
 xcodebuild -project FreeCommander.xcodeproj -scheme FreeCommander \
-  -destination 'platform=iOS Simulator,name=iPhone 17' \
-  -derivedDataPath build/DerivedData build CODE_SIGNING_ALLOWED=NO
+  -destination 'platform=macOS,arch=arm64' -derivedDataPath build/DerivedData build
+
+xcodebuild -project FreeCommander.xcodeproj -scheme FreeCommander \
+  -destination 'platform=macOS,arch=arm64' -derivedDataPath build/DerivedData test
 ```
 
-### Uruchomienie na prawdziwym urządzeniu (za darmo)
+Szybkie uruchomienie zbudowanej aplikacji:
 
-1. Podłącz iPhone'a/iPada kablem, w Xcode wybierz urządzenie jako destination.
-2. `Signing & Capabilities` → wybierz swój **Personal Team** (darmowe konto Apple ID wystarczy).
-3. Na urządzeniu: Ustawienia → Ogólne → VPN i zarządzanie urządzeniami → zaufaj certyfikatowi.
-4. ⌘R. Aplikacja darmowego konta wygasa po **7 dniach** — wystarczy ponownie zbudować z Xcode.
+```bash
+open build/DerivedData/Build/Products/Debug/FreeCommander.app
+```
+
+Aplikacja podpisana ad-hoc lokalnie (bez konta dewelopera). `--fc-snapshot <ścieżka>`
+to ukryty tryb weryfikacyjny: renderuje okno do PNG i kończy działanie.
 
 ## Architektura
 
 ```
 FreeCommander/
-  App/          FreeCommanderApp (punkt wejścia)
-  Models/       FileItem, SortField/Direction, PaneLocation (documents/temporary/bookmark)
-  Services/     FileSystemService (lista/operacje/ZIP), BookmarkStore (security-scoped
-                bookmarks), ScopeAccess (licznik start/stopAccessing), SettingsStore,
+  App/          FreeCommanderApp (punkt wejścia + tryb snapshotu, menu Commands)
+  Models/       FileItem, SortField/Direction, FavoriteLocation/SystemLocations
+  Services/     FileSystemService (lista/operacje/ZIP/Kosz), SettingsStore,
                 OperationsEngine (operacje wsadowe z postępem, poza wątkiem głównym)
-  ViewModels/   PaneViewModel — stan panelu: katalog, zawartość, zaznaczenie, sort, filtr
-  Views/        ContentView (układ 2-panelowy), FilePaneView, FileRowView,
-                BottomActionBar (pasek F-klawiszy TC), RootsSheet, SettingsSheet,
-                InfoSheet, Representables (ShareSheet, FolderPicker)
+  ViewModels/   PaneViewModel — stan panelu: katalog, zawartość, zaznaczenie,
+                sort, filtr, żądania dialogów (podgląd/info/rename/delete)
+  Views/        ContentView (układ 2-panelowy + router komend), FilePaneView
+                (belka ścieżki + status), FileListView (NSTableView: zaznaczanie,
+                dwuklik, sortowanie nagłówkami, menu kontekstowe), BottomActionBar,
+                InfoSheet, QuickLookView, CommandRouter + KeyboardMonitor (F-klawisze)
   Resources/    pl.lproj / en.lproj (Localizable.strings)
+Tests/          15 testów jednostkowych rdzenia (listy, sortowanie, operacje, ZIP, rozmiary)
 ```
 
-Zależność zewnętrzna: [ZIPFoundation](https://github.com/weichsel/ZIPFoundation) (MIT) — tylko do ZIP.
-Stan paneli, sortowanie i zakładki są zapamiętywane w `UserDefaults`.
+Zależność zewnętrzna: [ZIPFoundation](https://github.com/weichsel/ZIPFoundation) (MIT).
 
 ## Mapa drogowa
 
-- [ ] Sieć: SMB (SMBClient), SFTP, FTP, WebDAV przez URLSession — własne „drzewo" lokalizacji
-- [ ] Archiwa: 7z/RAR (odczyt), opcje konfliktów (nadpisz/pomiń/zmień nazwę)
-- [ ] Wbudowany edytor tekstu
-- [ ] Skróty klawiatury sprzętowej na iPada (F5=kopiuj, F6=przenieś, F7=nowy folder, F8=usuń)
-- [ ] Porównywanie paneli (sync katalogów), wątki operacji w tle z anulowaniem
-- [ ] Ikona aplikacji, motyw ciemny/jasny w stylu TC
+- [ ] Widok drzewa katalogów / zakładki użytkownika (zapisane ścieżki)
+- [ ] Porównywanie paneli (sync katalogów jak w TC), wybór trybu konfliktów (nadpisz/pomiń)
+- [ ] Edytor tekstu (F4), wiersz poleceń z `%!` jak w TC
+- [ ] Archiwa 7z/RAR (odczyt), tar.gz
+- [ ] Drag & drop między panelami i z Findera, schowek na wycięte pliki
+- [ ] Rozmiary pakietów .app (teraz „zero KB"), atrybuty uprawnień w Informacjach
+- [ ] Motyw jasny/ciemny w stylu TC, konfigurowalne kolumny
 
-## Nazwa
+## Wersja iOS
 
-„FreeCommander" to robocza nazwa (istnieje też produkt FreeCommander na Windows).
-Zmiana nazwy = jedno pole w `project.yml` (`name`, `CFBundleDisplayName`) + `xcodegen generate`.
+Pierwotny prototyp na iOS/iPadOS (sandbox, security-scoped bookmarks) jest zachowany
+na gałęzi [`ios-mvp`](https://github.com/) w tym repozytorium.

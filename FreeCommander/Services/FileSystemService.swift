@@ -51,8 +51,6 @@ enum FileSystemService {
                 let l = lhs.modificationDate ?? .distantPast
                 let r = rhs.modificationDate ?? .distantPast
                 cmp = l == r ? .orderedSame : (l < r ? .orderedAscending : .orderedDescending)
-            case .type:
-                cmp = lhs.typeLabel.localizedCaseInsensitiveCompare(rhs.typeLabel)
             }
             if cmp == .orderedSame {
                 return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
@@ -77,7 +75,7 @@ enum FileSystemService {
             try FileManager.default.moveItem(at: source, to: target)
             return target
         } catch {
-            // Różne piaskownice/wolumeny: przenieś przez kopię.
+            // Różne wolumeny: przenieś przez kopię.
             try FileManager.default.copyItem(at: source, to: target)
             try? FileManager.default.removeItem(at: source)
             return target
@@ -91,6 +89,22 @@ enum FileSystemService {
         }
         try FileManager.default.moveItem(at: source, to: target)
         return target
+    }
+
+    enum DeleteMode {
+        case trash
+        case permanent
+    }
+
+    static func deleteSync(_ urls: [URL], mode: DeleteMode) throws {
+        for url in urls {
+            switch mode {
+            case .trash:
+                try FileManager.default.trashItem(at: url, resultingItemURL: nil)
+            case .permanent:
+                try FileManager.default.removeItem(at: url)
+            }
+        }
     }
 
     static func uniqueURL(for name: String, in directory: URL) -> URL {

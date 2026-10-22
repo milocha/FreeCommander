@@ -14,42 +14,12 @@ struct FileItem: Identifiable, Hashable, Sendable {
     var fileExtension: String { url.pathExtension.lowercased() }
     var isArchive: Bool { fileExtension == "zip" }
     var typeLabel: String { isDirectory ? "DIR" : (fileExtension.isEmpty ? "—" : fileExtension.uppercased()) }
-
-    var systemImage: String {
-        if isDirectory { return "folder.fill" }
-        switch fileExtension {
-        case "zip": return "doc.zipper"
-        case "pdf": return "doc.richtext"
-        case "png", "jpg", "jpeg", "heic", "gif", "webp", "tiff": return "photo"
-        case "mp3", "m4a", "wav", "aac", "flac": return "music.note"
-        case "mp4", "mov", "m4v", "avi", "mkv": return "film"
-        case "txt", "md", "log", "csv": return "doc.plaintext"
-        case "doc", "docx", "rtf", "pages": return "doc.text"
-        case "xls", "xlsx", "numbers": return "tablecells"
-        case "key", "ppt", "pptx": return "rectangle.on.rectangle"
-        case "app", "bundle", "framework": return "app"
-        default: return "doc"
-        }
-    }
-
-    var iconColor: Color {
-        if isDirectory { return .blue }
-        switch fileExtension {
-        case "zip": return .orange
-        case "pdf", "doc", "docx", "rtf", "pages": return .red
-        case "png", "jpg", "jpeg", "heic", "gif", "webp", "tiff": return .green
-        case "mp3", "m4a", "wav", "aac", "flac": return .pink
-        case "mp4", "mov", "m4v", "avi", "mkv": return .purple
-        default: return .gray
-        }
-    }
 }
 
 enum SortField: String, CaseIterable, Identifiable {
     case name
     case modificationDate
     case size
-    case type
 
     var id: String { rawValue }
 
@@ -58,8 +28,20 @@ enum SortField: String, CaseIterable, Identifiable {
         case .name: return "sort.name"
         case .modificationDate: return "sort.date"
         case .size: return "sort.size"
-        case .type: return "sort.type"
         }
+    }
+
+    /// Klucz kolumny/NSSortDescriptor.
+    var sortKey: String {
+        switch self {
+        case .name: return "name"
+        case .modificationDate: return "date"
+        case .size: return "size"
+        }
+    }
+
+    static func fromSortKey(_ key: String) -> SortField? {
+        allCases.first { $0.sortKey == key }
     }
 }
 
@@ -69,58 +51,48 @@ enum SortDirection {
 
     var toggled: SortDirection { self == .ascending ? .descending : .ascending }
     var titleKey: LocalizedStringKey { self == .ascending ? "sort.ascending" : "sort.descending" }
-    var systemImage: String { self == .ascending ? "arrow.up" : "arrow.down" }
 
     var storageKey: String { self == .ascending ? "asc" : "desc" }
     static func parse(_ key: String?) -> SortDirection { key == "desc" ? .descending : .ascending }
 }
 
-/// Miejsca, z których panel może czytać dane. Na iOS nie ma dostępu do całego
-/// systemu plików — piaskownica aplikacji + katalogi udostępnione przez
-/// aplikację Pliki (security-scoped bookmark).
-enum PaneLocation: Equatable {
-    case documents
-    case temporary
-    case bookmark(UUID)
+/// Ulubione i woluminy dla menu lokalizacji panelu.
+struct FavoriteLocation: Identifiable {
+    let name: String
+    let url: URL
+    var id: String { name }
+}
 
-    static var documentsURL: URL {
-        let urls = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
-        let documents = urls[0]
-        if !FileManager.default.fileExists(atPath: documents.path) {
-            try? FileManager.default.createDirectory(at: documents, withIntermediateDirectories: true)
+enum SystemLocations {
+    static var favorites: [FavoriteLocation] {
+        let home = FileManager.default.homeDirectoryForCurrentUser
+        let fm = FileManager.default
+        var list: [FavoriteLocation] = [
+            FavoriteLocation(name: NSLocalizedString("fav.home", comment: ""), url: home),
+            FavoriteLocation(name: NSLocalizedString("fav.root", comment: ""), url: URL(fileURLWithPath: "/")),
+            FavoriteLocation(name: NSLocalizedString("fav.applications", comment: ""), url: URL(fileURLWithPath: "/Applications")),
+        ]
+        for (key, nameKey) in [
+            (FileManager.SearchPathDirectory.desktopDirectory, "fav.desktop"),
+            (FileManager.SearchPathDirectory.documentDirectory, "fav.documents"),
+            (FileManager.SearchPathDirectory.downloadsDirectory, "fav.downloads"),
+        ] {
+            if let url = fm.urls(for: key, in: .userDomainMask).first {
+                list.append(FavoriteLocation(name: NSLocalizedString(nameKey, comment: ""), url: url))
+            }
         }
-        return documents
+        return list
     }
 
-    static var temporaryURL: URL {
-        URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
-    }
-
-    @MainActor
-    var url: URL {
-        switch self {
-        case .documents: return PaneLocation.documentsURL
-        case .temporary: return PaneLocation.temporaryURL
-        case .bookmark(let id): return BookmarkStore.shared.resolve(id) ?? PaneLocation.documentsURL
+    static func mountedVolumes() -> [FavoriteLocation] {
+        guard let volumes = FileManager.default.mountedVolumeURLs(includingResourceValuesForKeys: [.volumeIsBrowsableKey]) else {
+            return []
         }
-    }
-
-    var storageKey: String {
-        switch self {
-        case .documents: return "documents"
-        case .temporary: return "temporary"
-        case .bookmark(let id): return "bookmark:\(id.uuidString)"
+        return volumes.compactMap { url in
+            let values = try? url.resourceValues(forKeys: [.volumeIsBrowsableKey, .volumeNameKey])
+            guard values?.volumeIsBrowsable == true else { return nil }
+            let name = values?.volumeName ?? url.lastPathComponent
+            return FavoriteLocation(name: name, url: url)
         }
-    }
-
-    static func parse(_ key: String?) -> PaneLocation {
-        guard let key else { return .documents }
-        if key == "temporary" { return .temporary }
-        if key == "documents" || key.isEmpty { return .documents }
-        if key.hasPrefix("bookmark:") {
-            let raw = String(key.dropFirst("bookmark:".count))
-            if let id = UUID(uuidString: raw) { return .bookmark(id) }
-        }
-        return .documents
     }
 }

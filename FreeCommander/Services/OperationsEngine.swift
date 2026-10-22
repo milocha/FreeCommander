@@ -28,13 +28,14 @@ final class OperationsEngine: ObservableObject {
         }
     }
 
-    func deleteSelection(in pane: PaneViewModel) {
-        delete(pane.selectedItems(), in: pane)
+    func deleteSelection(in pane: PaneViewModel, mode: FileSystemService.DeleteMode) {
+        delete(pane.selectedItems(), in: pane, mode: mode)
     }
 
-    func delete(_ items: [FileItem], in pane: PaneViewModel) {
-        runOperation(items, verbKey: "op.deleting", sourcePane: pane, targetPane: pane) { url in
-            try FileManager.default.removeItem(at: url)
+    func delete(_ items: [FileItem], in pane: PaneViewModel, mode: FileSystemService.DeleteMode) {
+        let mode = mode
+        runOperation(items, verbKey: mode == .trash ? "op.trashing" : "op.deleting", sourcePane: pane, targetPane: pane) { url in
+            try FileSystemService.deleteSync([url], mode: mode)
         }
     }
 

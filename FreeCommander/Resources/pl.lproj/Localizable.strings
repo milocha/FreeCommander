@@ -1,24 +1,28 @@
-/* FreeCommander — polski */
+/* FreeCommander — polski (macOS) */
 
 "app.title" = "FreeCommander";
-"pane.title" = "Panel %d";
-"pane.switcher" = "Aktywny panel";
+"pane.activeHint" = "Aktywny: Panel %d";
 
 /* Przyciski i akcje */
 "action.copy" = "Kopiuj";
 "action.move" = "Przenieś";
 "action.delete" = "Usuń";
+"action.trash" = "Przenieś do Kosza";
+"action.deletePermanent" = "Usuń trwale";
 "action.newFolder" = "Nowy folder";
 "action.newFile" = "Nowy plik tekstowy";
 "action.rename" = "Zmień nazwę";
 "action.duplicate" = "Duplikuj";
 "action.info" = "Informacje";
-"action.share" = "Udostępnij";
 "action.zip" = "Spakuj do ZIP";
-"action.zipSingle" = "Spakuj tylko ten element";
+"action.zipSelection" = "Spakuj zaznaczenie do ZIP";
 "action.unzip" = "Rozpakuj";
+"action.open" = "Otwórz";
 "action.openFolder" = "Otwórz folder";
 "action.preview" = "Podgląd";
+"action.revealInFinder" = "Pokaż w Finderze";
+"action.copyToOther" = "Kopiuj do drugiego panelu";
+"action.moveToOther" = "Przenieś do drugiego panelu";
 "action.select" = "Zaznacz";
 "action.selectAll" = "Zaznacz wszystko";
 "action.deselectAll" = "Odznacz wszystko";
@@ -26,51 +30,56 @@
 "action.more" = "Więcej";
 "action.create" = "Utwórz";
 "action.save" = "Zapisz";
+"action.refresh" = "Odśwież";
 
 /* Wspólne */
 "common.cancel" = "Anuluj";
 "common.ok" = "OK";
 "common.close" = "Zamknij";
 
-/* Sortowanie */
-"sort.title" = "Sortowanie";
+/* Sortowanie i kolumny */
 "sort.name" = "Nazwa";
 "sort.date" = "Data modyfikacji";
 "sort.size" = "Rozmiar";
-"sort.type" = "Typ";
 "sort.ascending" = "Rosnąco";
 "sort.descending" = "Malejąco";
+"col.name" = "Nazwa";
+"col.size" = "Rozmiar";
+"col.date" = "Zmodyfikowano";
+"dir.marker" = "KAT";
 
-/* Ustawienia */
-"settings.title" = "Ustawienia";
-"settings.listSection" = "Listy plików";
-"settings.showHidden" = "Pokaż ukryte pliki";
-"settings.directoriesFirst" = "Katalogi najpierw";
-"settings.about" = "O aplikacji";
-"info.version" = "Wersja";
-"settings.note" = "Aplikacja widzi własny katalog Dokumenty (widoczny też w aplikacji Pliki) oraz katalogi udostępnione przez Pliki i dodane jako zakładki. iOS nie pozwala przeglądać całego systemu plików urządzenia.";
+/* Menu */
+"menu.files" = "Pliki";
+"menu.go" = "Przejdź";
+"menu.view" = "Widok";
+"menu.copy" = "Kopiuj do drugiego panelu (F5)";
+"menu.move" = "Przenieś do drugiego panelu (F6)";
+"menu.newFolder" = "Nowy folder (F7)";
+"menu.rename" = "Zmień nazwę (F2)";
+"menu.delete" = "Usuń zaznaczenie (F8)";
+"menu.preview" = "Podgląd (Space)";
+"menu.open" = "Otwórz (Enter)";
+"menu.toggleHidden" = "Pokaż/ukryj ukryte pliki";
 
 /* Lokalizacje */
-"roots.title" = "Lokalizacje";
-"roots.builtin" = "Wbudowane";
-"roots.documents" = "Dokumenty";
-"roots.temporary" = "Tymczasowy";
-"roots.bookmarks" = "Zakładki (z aplikacji Pliki)";
-"roots.add" = "Dodaj lokalizację z aplikacji Pliki…";
-"roots.noBookmarks" = "Brak zakładek. Dodaj katalog (np. iCloud Drive) przyciskiem powyżej.";
-"roots.unavailable" = "Lokalizacja „%@” jest niedostępna. Dodaj ją ponownie.";
+"roots.favorites" = "Ulubione";
+"roots.volumes" = "Woluminy";
+"fav.home" = "Dom";
+"fav.root" = "Dysk startowy (/)";
+"fav.applications" = "Aplikacje";
+"fav.desktop" = "Pulpit";
+"fav.documents" = "Dokumenty";
+"fav.downloads" = "Pobrane";
+"path.placeholder" = "Ścieżka (Return = przejdź)";
 
 /* Puste stany */
 "empty.title" = "Pusto";
-"empty.hint" = "Brak plików w tym katalogu. Przenieś pliki przez Udostępnij → Zapisz do plików (wybierając FreeCommander), podłącz urządzenie do Findera (Udostępnianie plików) albo dodaj lokalizację z aplikacji Pliki (ikona zakładek).";
-"empty.filter" = "Brak wyników";
-"empty.filterHint" = "Żaden plik w tym katalogu nie pasuje do filtra.";
 
 /* Potwierdzenia */
-"confirm.delete.title" = "Usunąć zaznaczone elementy?";
-"confirm.delete.message" = "Liczba elementów do trwałego usunięcia: %d.";
-"confirm.delete.single.title" = "Usunąć element?";
-"confirm.delete.single.message" = "Element „%@” zostanie trwale usunięty.";
+"confirm.delete.title" = "Co zrobić z zaznaczonymi elementami?";
+"confirm.delete.message" = "Liczba elementów: %d.";
+"confirm.delete.single.title" = "Co zrobić z elementem?";
+"confirm.delete.single.message" = "Element „%@” zostanie usunięty.";
 
 /* Nazwy i komunikaty */
 "prompt.folderName" = "Nazwa folderu";
@@ -81,18 +90,18 @@
 "op.copying" = "Kopiowanie";
 "op.moving" = "Przenoszenie";
 "op.deleting" = "Usuwanie";
+"op.trashing" = "Przenoszenie do Kosza";
 "op.zipping" = "Pakowanie…";
 "op.unzipping" = "Rozpakowywanie…";
 "op.zipDone" = "Utworzono archiwum: %@";
 "op.unzipDone" = "Rozpakowano do: %@";
 "archive.defaultName" = "Archiwum";
 
-/* Pasek stanu panelu */
-"status.items" = "%d el.";
+/* Pasek statusu panelu */
+"status.itemsMac" = "%d plików · %d kat.";
 "status.selected" = "%d zazn. · %@";
 
 /* Informacje o pliku */
-"info.title" = "Informacje";
 "info.name" = "Nazwa";
 "info.type" = "Typ";
 "info.kindFolder" = "Folder";
@@ -107,6 +116,8 @@
 
 /* Błędy */
 "error.title" = "Błąd";
-"error.listing" = "Nie można odczytać katalogu „%@”: %@";
+"error.listing" = "Nie można odczytać „%@”: %@";
 "error.nameInvalid" = "Nieprawidłowa nazwa (pusta lub zawiera „/”).";
 "error.intoSelf" = "Nie można przenieść folderu do jego własnego podfolderu.";
+"error.notDirectory" = "To nie jest katalog: %@";
+"error.noSuchPath" = "ścieżka nie istnieje";
