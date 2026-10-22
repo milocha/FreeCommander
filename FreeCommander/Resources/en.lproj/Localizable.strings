@@ -121,3 +121,23 @@
 "error.intoSelf" = "Cannot move a folder into its own subfolder.";
 "error.notDirectory" = "Not a directory: %@";
 "error.noSuchPath" = "path does not exist";
+
+/* Sidebar and disks */
+"sidebar.favorites" = "Favorites";
+"sidebar.volumes" = "Disks and volumes";
+"fav.addCurrent" = "Add current folder to favorites";
+"fav.remove" = "Remove from favorites";
+"fav.hint" = "No favorites yet — add a folder with the star button in the path bar.";
+"volume.usage" = "%@ used · %d%%";
+"disk.usedOfFormat" = "%@ used of %@ (%d%%)";
+"disk.freeShort" = "%@ free";
+"disk.unavailable" = "Disk info unavailable";
+"status.free" = "· %@ free (%d%% used)";
+
+/* Clipboard and macOS shortcuts */
+"menu.clipboardCopy" = "Copy files";
+"menu.clipboardCut" = "Cut files";
+"menu.clipboardPaste" = "Paste files";
+"menu.info" = "Info";
+"menu.trash" = "Move to Trash";
+"clipboard.empty" = "Clipboard is empty — copy files with ⌘C (also from Finder) and paste with ⌘V.";

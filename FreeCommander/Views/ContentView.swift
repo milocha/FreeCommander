@@ -17,23 +17,30 @@ struct ContentView: View {
     private var otherPane: PaneViewModel { activePaneIndex == 0 ? rightPane : leftPane }
 
     var body: some View {
-        VStack(spacing: 0) {
-            headerBar
-            if operations.isRunning {
-                progressLine
-            }
-            HStack(spacing: 1) {
-                paneView(leftPane, index: 0)
-                Rectangle().fill(Color.primary.opacity(0.2)).frame(width: 1)
-                paneView(rightPane, index: 1)
-            }
-            BottomActionBar(
+        NavigationSplitView {
+            SidebarView(
                 activePane: activePane,
-                onNewFolder: { newName = ""; newFolderPresented = true },
-                onNewFile: { newName = ""; newFilePresented = true },
-                onDelete: { deleteConfirmPresented = true })
+                navigate: { url in activePane.navigate(to: url) })
+                .navigationSplitViewColumnWidth(min: 190, ideal: 230, max: 320)
+        } detail: {
+            VStack(spacing: 0) {
+                headerBar
+                if operations.isRunning {
+                    progressLine
+                }
+                HStack(spacing: 1) {
+                    paneView(leftPane, index: 0)
+                    Rectangle().fill(Color.primary.opacity(0.2)).frame(width: 1)
+                    paneView(rightPane, index: 1)
+                }
+                BottomActionBar(
+                    activePane: activePane,
+                    onNewFolder: { newName = ""; newFolderPresented = true },
+                    onNewFile: { newName = ""; newFilePresented = true },
+                    onDelete: { deleteConfirmPresented = true })
+            }
+            .background(Color(nsColor: .windowBackgroundColor))
         }
-        .background(Color(nsColor: .windowBackgroundColor))
         .modifier(WindowDialogsModifier(
             operations: operations,
             deleteConfirmPresented: $deleteConfirmPresented,
@@ -96,6 +103,21 @@ struct ContentView: View {
         router.otherPaneProvider = { pane in
             pane.paneIndex == leftPane.paneIndex ? rightPane : leftPane
         }
+        // Skróty w standardzie macOS (Finder)
+        router.clipboardCopy = {
+            FileClipboard.shared.store(activePane.selectedItems().map(\.url), cut: false)
+        }
+        router.clipboardCut = {
+            FileClipboard.shared.store(activePane.selectedItems().map(\.url), cut: true)
+        }
+        router.clipboardPaste = {
+            operations.pasteFromClipboard(into: activePane)
+        }
+        router.trashSelection = {
+            operations.deleteSelection(in: activePane, mode: .trash)
+        }
+        router.toggleFilter = { activePane.showFilter.toggle() }
+        router.setPane = { activePaneIndex = min(max($0, 0), 1) }
     }
 
     private var headerBar: some View {

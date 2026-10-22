@@ -25,23 +25,25 @@ struct FileListView: NSViewRepresentable {
 
         let nameColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("name"))
         nameColumn.title = NSLocalizedString("col.name", comment: "")
-        nameColumn.width = 440
-        nameColumn.minWidth = 160
-        nameColumn.resizingMask = .autoresizingMask
+        nameColumn.width = Coordinator.storedWidth(for: "name", fallback: 440)
+        nameColumn.minWidth = 120
+        nameColumn.resizingMask = [.autoresizingMask, .userResizingMask]
         nameColumn.sortDescriptorPrototype = NSSortDescriptor(
             key: "name", ascending: true,
             selector: #selector(NSString.localizedCaseInsensitiveCompare(_:)))
         let sizeColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("size"))
         sizeColumn.title = NSLocalizedString("col.size", comment: "")
-        sizeColumn.width = 90
-        sizeColumn.minWidth = 70
-        sizeColumn.maxWidth = 140
+        sizeColumn.width = Coordinator.storedWidth(for: "size", fallback: 90)
+        sizeColumn.minWidth = 60
+        sizeColumn.maxWidth = 220
+        sizeColumn.resizingMask = .userResizingMask
         sizeColumn.sortDescriptorPrototype = NSSortDescriptor(key: "size", ascending: true)
         let dateColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("date"))
         dateColumn.title = NSLocalizedString("col.date", comment: "")
-        dateColumn.width = 150
-        dateColumn.minWidth = 110
-        dateColumn.maxWidth = 200
+        dateColumn.width = Coordinator.storedWidth(for: "date", fallback: 150)
+        dateColumn.minWidth = 90
+        dateColumn.maxWidth = 320
+        dateColumn.resizingMask = .userResizingMask
         dateColumn.sortDescriptorPrototype = NSSortDescriptor(key: "date", ascending: true)
         table.addTableColumn(nameColumn)
         table.addTableColumn(sizeColumn)
@@ -61,6 +63,7 @@ struct FileListView: NSViewRepresentable {
         scrollView.hasVerticalScroller = true
         scrollView.autohidesScrollers = true
         context.coordinator.table = table
+        context.coordinator.installResizeObserver()
         context.coordinator.sync()
         return scrollView
     }
@@ -81,11 +84,57 @@ struct FileListView: NSViewRepresentable {
         private var lastItems: [FileItem] = []
         private var syncingSelection = false
         private var pendingMenuItem: FileItem?
+        private var resizeObserver: NSObjectProtocol?
+        private var widthSaveTask: DispatchWorkItem?
 
         init(pane: PaneViewModel, onActivate: @escaping () -> Void, onOpen: @escaping (FileItem) -> Void) {
             self.pane = pane
             self.onActivate = onActivate
             self.onOpen = onOpen
+        }
+
+        deinit {
+            if let resizeObserver {
+                NotificationCenter.default.removeObserver(resizeObserver)
+            }
+        }
+
+        // MARK: Szerokości kolumn (zmieniane dragiem, zapamiętywane globalnie)
+
+        static func storedWidth(for columnKey: String, fallback: CGFloat) -> CGFloat {
+            let value = UserDefaults.standard.double(forKey: "col.\(columnKey).width")
+            return value > 0 ? CGFloat(value) : fallback
+        }
+
+        func installResizeObserver() {
+            guard let table, resizeObserver == nil else { return }
+            resizeObserver = NotificationCenter.default.addObserver(
+                forName: NSTableView.columnDidResizeNotification,
+                object: table,
+                queue: .main) { [weak self] _ in
+                    MainActor.assumeIsolated {
+                        self?.scheduleColumnWidthSave()
+                    }
+                }
+        }
+
+        private func scheduleColumnWidthSave() {
+            widthSaveTask?.cancel()
+            let task = DispatchWorkItem { [weak self] in
+                MainActor.assumeIsolated {
+                    self?.saveColumnWidths()
+                }
+            }
+            widthSaveTask = task
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4, execute: task)
+        }
+
+        private func saveColumnWidths() {
+            guard let table else { return }
+            for column in table.tableColumns {
+                guard let key = column.identifier.rawValue as String? else { continue }
+                UserDefaults.standard.set(Double(column.width), forKey: "col.\(key).width")
+            }
         }
 
         // MARK: Dane

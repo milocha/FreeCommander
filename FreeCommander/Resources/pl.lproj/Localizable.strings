@@ -121,3 +121,23 @@
 "error.intoSelf" = "Nie można przenieść folderu do jego własnego podfolderu.";
 "error.notDirectory" = "To nie jest katalog: %@";
 "error.noSuchPath" = "ścieżka nie istnieje";
+
+/* Sidebar i dyski */
+"sidebar.favorites" = "Ulubione";
+"sidebar.volumes" = "Dyski i woluminy";
+"fav.addCurrent" = "Dodaj bieżący folder do ulubionych";
+"fav.remove" = "Usuń z ulubionych";
+"fav.hint" = "Brak własnych ulubionych — dodaj folder gwiazdką w belce ścieżki.";
+"volume.usage" = "%@ zajęte · %d%%";
+"disk.usedOfFormat" = "Zajęte %@ z %@ (%d%%)";
+"disk.freeShort" = "Wolne %@";
+"disk.unavailable" = "Brak danych o dysku";
+"status.free" = "· wolne %@ (zajęte %d%%)";
+
+/* Schowek i skróty macOS */
+"menu.clipboardCopy" = "Kopiuj pliki";
+"menu.clipboardCut" = "Wytnij pliki";
+"menu.clipboardPaste" = "Wklej pliki";
+"menu.info" = "Informacje";
+"menu.trash" = "Przenieś do Kosza";
+"clipboard.empty" = "Schowek jest pusty — skopiuj pliki ⌘C (także z Findera) i wklej ⌘V.";

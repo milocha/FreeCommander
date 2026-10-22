@@ -3,6 +3,7 @@ import SwiftUI
 struct FilePaneView: View {
     @EnvironmentObject private var settings: SettingsStore
     @EnvironmentObject private var operations: OperationsEngine
+    @EnvironmentObject private var favorites: FavoritesStore
 
     @ObservedObject var pane: PaneViewModel
     let isActive: Bool
@@ -156,6 +157,15 @@ struct FilePaneView: View {
             .buttonStyle(.borderless)
 
             Button {
+                favorites.add(url: pane.directory)
+            } label: {
+                Image(systemName: favorites.contains(url: pane.directory) ? "star.fill" : "star")
+                    .foregroundStyle(favorites.contains(url: pane.directory) ? Color.yellow : Color.primary)
+            }
+            .buttonStyle(.borderless)
+            .help(NSLocalizedString("fav.addCurrent", comment: ""))
+
+            Button {
                 pane.reload()
             } label: {
                 Image(systemName: "arrow.clockwise")
@@ -237,6 +247,17 @@ struct FilePaneView: View {
     private var statusBar: some View {
         HStack {
             Text(pane.isLoading ? "…" : pane.statusSummary)
+            if let usage = pane.volumeUsage {
+                Text(String(
+                    format: NSLocalizedString("status.free", comment: ""),
+                    Formatters.size(usage.free),
+                    usage.usedPercent))
+                    .help(String(
+                        format: NSLocalizedString("disk.usedOfFormat", comment: ""),
+                        Formatters.size(usage.used),
+                        Formatters.size(usage.total),
+                        usage.usedPercent))
+            }
             Spacer()
             if !pane.selectedURLs.isEmpty {
                 Text(pane.selectionSummary)

@@ -25,6 +25,9 @@ targets:
     dependencies:
       - package: ZIPFoundation
         product: ZIPFoundation
+    settings:
+      base:
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
     info:
       path: FreeCommander/Info.plist
       properties:

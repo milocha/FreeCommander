@@ -80,6 +80,42 @@ final class OperationsEngine: ObservableObject {
         }
     }
 
+    /// ⌘V — wklej pliki ze schowka (własnego lub Findera) do aktywnego panelu.
+    func pasteFromClipboard(into pane: PaneViewModel) {
+        let destination = pane.directory
+        let clipboard = FileClipboard.shared
+        if clipboard.isCut, !clipboard.urls.isEmpty {
+            let items = clipboard.urls.compactMap { Self.item(for: $0) }
+            clipboard.clear()
+            runOperation(items, verbKey: "op.moving", sourcePane: nil, targetPane: pane) { url in
+                _ = try FileSystemService.moveSync(from: url, toDirectory: destination)
+            }
+        } else {
+            let urls = clipboard.urlsForPaste()
+            guard !urls.isEmpty else {
+                alertMessage = NSLocalizedString("clipboard.empty", comment: "")
+                return
+            }
+            let items = urls.compactMap { Self.item(for: $0) }
+            runOperation(items, verbKey: "op.copying", sourcePane: nil, targetPane: pane) { url in
+                _ = try FileSystemService.copySync(from: url, toDirectory: destination)
+            }
+        }
+    }
+
+    static func item(for url: URL) -> FileItem? {
+        var isDirectory: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory) else { return nil }
+        let values = try? url.resourceValues(forKeys: [.fileSizeKey, .contentModificationDateKey])
+        return FileItem(
+            url: url,
+            name: url.lastPathComponent,
+            isDirectory: isDirectory.boolValue,
+            size: isDirectory.boolValue ? nil : Int64(values?.fileSize ?? 0),
+            modificationDate: values?.contentModificationDate,
+            creationDate: nil)
+    }
+
     private func runOperation(
         _ items: [FileItem],
         verbKey: String,

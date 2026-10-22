@@ -13,6 +13,7 @@ final class PaneViewModel: ObservableObject, Identifiable {
     @Published private(set) var items: [FileItem] = []
     @Published var selectedURLs: Set<URL> = []
     @Published private(set) var isLoading = false
+    @Published private(set) var volumeUsage: VolumeUsage?
     @Published var errorMessage: String?
     @Published var filterText = ""
     @Published var showFilter = false
@@ -206,6 +207,7 @@ final class PaneViewModel: ObservableObject, Identifiable {
                 guard gen == self.generation else { return }
                 items = loaded
                 selectedURLs = selectedURLs.intersection(Set(loaded.map(\.url)))
+                volumeUsage = VolumeInfo.usage(for: dir)
                 isLoading = false
             } catch {
                 guard gen == self.generation else { return }

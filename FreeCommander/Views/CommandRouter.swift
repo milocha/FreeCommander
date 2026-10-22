@@ -24,6 +24,14 @@ final class CommandRouter {
     var navigateTo: (URL) -> Void = { _ in }
     var otherPaneProvider: (PaneViewModel) -> PaneViewModel = { $0 }
 
+    // Skróty w standardzie macOS (Finder)
+    var clipboardCopy: () -> Void = {}
+    var clipboardCut: () -> Void = {}
+    var clipboardPaste: () -> Void = {}
+    var trashSelection: () -> Void = {}
+    var toggleFilter: () -> Void = {}
+    var setPane: (Int) -> Void = { _ in }
+
     private init() {}
 }
 
@@ -69,8 +77,37 @@ struct KeyboardMonitor: NSViewRepresentable {
                 let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
                 let router = CommandRouter.shared
                 let plain = flags.isEmpty || flags == .function
+                let command = flags.contains(.command)
+                let commandShift = flags == [.command, .shift] || flags == [.command, .shift, .function]
 
+                // Najpierw kombinacje z Shift, potem czysty Cmd, na końcu klawisze TC.
                 switch event.keyCode {
+                case 45 where commandShift:  // Cmd+Shift+N — nowy folder (Finder)
+                    router.newFolder(); return nil
+                case 7 where command:        // Cmd+X — wytnij pliki
+                    router.clipboardCut(); return nil
+                case 8 where command:        // Cmd+C — kopiuje pliki
+                    router.clipboardCopy(); return nil
+                case 9 where command:        // Cmd+V — wklej pliki
+                    router.clipboardPaste(); return nil
+                case 34 where command:       // Cmd+I — informacje (Finder)
+                    router.info(); return nil
+                case 51 where command:       // Cmd+Delete — do Kosza (Finder)
+                    router.trashSelection(); return nil
+                case 31 where command:       // Cmd+O — otwórz
+                    router.openSelected(); return nil
+                case 125 where command:      // Cmd+Down — otwórz (Finder)
+                    router.openSelected(); return nil
+                case 126 where command:      // Cmd+Up — poziom wyżej (Finder)
+                    router.goUp(); return nil
+                case 18 where command:       // Cmd+1 — panel 1
+                    router.setPane(0); return nil
+                case 19 where command:       // Cmd+2 — panel 2
+                    router.setPane(1); return nil
+                case 3 where command:        // Cmd+F — filtr
+                    router.toggleFilter(); return nil
+                case 15 where command:       // Cmd+R — odśwież
+                    router.refresh(); return nil
                 case 48 where plain:  // Tab
                     router.switchPane(); return nil
                 case 36 where plain:  // Enter
@@ -99,22 +136,43 @@ struct KeyboardMonitor: NSViewRepresentable {
     }
 }
 
-/// Menu paska menu z tymi samymi akcjami. Skróty F5–F8/F2/Tab/Enter/Space obsługuje
-/// KeyboardMonitor (AppKit nie wspiera klawiszy funkcyjnych jako skrótów pozycji menu),
-/// więc w menu są one tylko opisane w tytułach.
+/// Menu paska menu. Skróty Cmd są natywnie obsługiwane przez pozycje menu;
+/// klawisze TC (F5–F8/F2/Tab/Enter/Space) przechwytuje KeyboardMonitor
+/// (AppKit nie wspiera klawiszy funkcyjnych jako skrótów pozycji menu).
 struct CommanderCommands: Commands {
     var body: some Commands {
         CommandMenu(NSLocalizedString("menu.files", comment: "")) {
+            Button(NSLocalizedString("menu.clipboardCopy", comment: "")) { CommandRouter.shared.clipboardCopy() }
+                .keyboardShortcut("c", modifiers: .command)
+            Button(NSLocalizedString("menu.clipboardCut", comment: "")) { CommandRouter.shared.clipboardCut() }
+                .keyboardShortcut("x", modifiers: .command)
+            Button(NSLocalizedString("menu.clipboardPaste", comment: "")) { CommandRouter.shared.clipboardPaste() }
+                .keyboardShortcut("v", modifiers: .command)
+            Divider()
             Button(NSLocalizedString("menu.copy", comment: "")) { CommandRouter.shared.copy() }
             Button(NSLocalizedString("menu.move", comment: "")) { CommandRouter.shared.move() }
-            Button(NSLocalizedString("menu.newFolder", comment: "")) { CommandRouter.shared.newFolder() }
-            Button(NSLocalizedString("menu.rename", comment: "")) { CommandRouter.shared.rename() }
             Divider()
+            Button(NSLocalizedString("menu.newFolder", comment: "")) { CommandRouter.shared.newFolder() }
+                .keyboardShortcut("n", modifiers: [.command, .shift])
+            Button(NSLocalizedString("menu.rename", comment: "")) { CommandRouter.shared.rename() }
+            Button(NSLocalizedString("menu.info", comment: "")) { CommandRouter.shared.info() }
+                .keyboardShortcut("i", modifiers: .command)
+            Divider()
+            Button(NSLocalizedString("menu.trash", comment: "")) { CommandRouter.shared.trashSelection() }
+                .keyboardShortcut(.delete, modifiers: [.command])
             Button(NSLocalizedString("menu.delete", comment: "")) { CommandRouter.shared.deleteSelection() }
             Button(NSLocalizedString("menu.preview", comment: "")) { CommandRouter.shared.preview() }
             Button(NSLocalizedString("menu.open", comment: "")) { CommandRouter.shared.openSelected() }
+                .keyboardShortcut("o", modifiers: .command)
         }
         CommandMenu(NSLocalizedString("menu.go", comment: "")) {
+            let userFavorites = FavoritesStore.shared.favorites
+            if !userFavorites.isEmpty {
+                ForEach(userFavorites) { favorite in
+                    Button(favorite.name) { CommandRouter.shared.navigateTo(favorite.url) }
+                }
+                Divider()
+            }
             ForEach(SystemLocations.favorites) { favorite in
                 Button(favorite.name) { CommandRouter.shared.navigateTo(favorite.url) }
             }
@@ -124,9 +182,17 @@ struct CommanderCommands: Commands {
             }
         }
         CommandMenu(NSLocalizedString("menu.view", comment: "")) {
+            Button(String(format: NSLocalizedString("pane.title", comment: ""), 1)) { CommandRouter.shared.setPane(0) }
+                .keyboardShortcut("1", modifiers: .command)
+            Button(String(format: NSLocalizedString("pane.title", comment: ""), 2)) { CommandRouter.shared.setPane(1) }
+                .keyboardShortcut("2", modifiers: .command)
+            Divider()
+            Button(NSLocalizedString("action.filter", comment: "")) { CommandRouter.shared.toggleFilter() }
+                .keyboardShortcut("f", modifiers: .command)
             Button(NSLocalizedString("menu.toggleHidden", comment: "")) { CommandRouter.shared.toggleHidden() }
                 .keyboardShortcut(".", modifiers: [.command, .shift])
             Button(NSLocalizedString("action.refresh", comment: "")) { CommandRouter.shared.refresh() }
+                .keyboardShortcut("r", modifiers: .command)
         }
     }
 }
