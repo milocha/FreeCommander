@@ -14,11 +14,11 @@
 		33B1C0131A0BC167189DE673 /* FilePaneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0D38A7AFD150B56B8E87E5C /* FilePaneView.swift */; };
 		44765C9FA1A3C2E1645D2007 /* FileClipboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE861127EBC5237CA683C4E6 /* FileClipboard.swift */; };
 		46D37A4D87083CCB236303E5 /* FreeCommanderApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C7155E6B21C20C882EA6DC8 /* FreeCommanderApp.swift */; };
-		4BC85B4ADACC954AFA268926 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 63047B8984F925599F3DFB0B /* Assets.xcassets */; };
 		500BBB6F000D4CA900B03569 /* OperationsEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B519642B9382A4C1836389F /* OperationsEngine.swift */; };
 		5066B4279156CD2CC7C54921 /* FileItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = E675573E95A411B05484FFF8 /* FileItem.swift */; };
 		5D1DE63D2921027DE33D1FD8 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 829B6BA7395DA17D8C71EA6B /* ContentView.swift */; };
 		6F8A2DD14063AE3FA7750257 /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 730A74A93BFE7497B74B7B35 /* SidebarView.swift */; };
+		75A69621644F09F16DDE6C6F /* FreeCommander.icns in Resources */ = {isa = PBXBuildFile; fileRef = 66B980F029547403A2FB746E /* FreeCommander.icns */; };
 		7F21AE2B681BE9C9585785BF /* CommandRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FBAE2A58221F4D0CF839B49 /* CommandRouter.swift */; };
 		8F1C8531124EF712B2BB760E /* Formatters.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC0DE4AD8251945D8CBAFC1C /* Formatters.swift */; };
 		94F0F97DCE689A7C1E584687 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 08BDB1918388F163298B6176 /* Localizable.strings */; };
@@ -48,7 +48,7 @@
 		31CBE8F398DAB840B3723A9B /* BottomActionBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BottomActionBar.swift; sourceTree = "<group>"; };
 		42816B05899F176EEF38711D /* FavoritesAndVolumeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoritesAndVolumeTests.swift; sourceTree = "<group>"; };
 		53080FCBFD0582D85D7D7235 /* FileSystemServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileSystemServiceTests.swift; sourceTree = "<group>"; };
-		63047B8984F925599F3DFB0B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		66B980F029547403A2FB746E /* FreeCommander.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = FreeCommander.icns; sourceTree = "<group>"; };
 		730A74A93BFE7497B74B7B35 /* SidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarView.swift; sourceTree = "<group>"; };
 		73B59073DE111D662EE2021F /* FreeCommanderTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FreeCommanderTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		7B519642B9382A4C1836389F /* OperationsEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OperationsEngine.swift; sourceTree = "<group>"; };
@@ -86,7 +86,7 @@
 		05B1205FE31E25D93FA376A7 /* FreeCommander */ = {
 			isa = PBXGroup;
 			children = (
-				63047B8984F925599F3DFB0B /* Assets.xcassets */,
+				66B980F029547403A2FB746E /* FreeCommander.icns */,
 				DA690632818A937176B0896E /* Info.plist */,
 				7452B15DE280DCC91814CFBC /* App */,
 				47753A2E4BE342FA7A215A84 /* Models */,
@@ -281,7 +281,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				4BC85B4ADACC954AFA268926 /* Assets.xcassets in Resources */,
+				75A69621644F09F16DDE6C6F /* FreeCommander.icns in Resources */,
 				94F0F97DCE689A7C1E584687 /* Localizable.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -396,7 +396,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.1.0;
+				MARKETING_VERSION = 0.2.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -527,7 +527,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.1.0;
+				MARKETING_VERSION = 0.2.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;

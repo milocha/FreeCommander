@@ -71,10 +71,13 @@ xcodebuild -project FreeCommander.xcodeproj -scheme FreeCommander \
   -destination 'platform=macOS,arch=arm64' -derivedDataPath build/DerivedData test
 ```
 
-Uruchomienie zbudowanej aplikacji:
+Instalacja do /Applications (po buildzie Release):
 
 ```bash
-open build/DerivedData/Build/Products/Debug/FreeCommander.app
+xcodebuild -project FreeCommander.xcodeproj -scheme FreeCommander -configuration Release \
+  -destination 'platform=macOS,arch=arm64' -derivedDataPath build/DerivedData build
+ditto build/DerivedData/Build/Products/Release/FreeCommander.app /Applications/FreeCommander.app
+open /Applications/FreeCommander.app
 ```
 
 Aplikacja podpisana ad-hoc lokalnie (bez konta dewelopera). `--fc-snapshot <ścieżka>`

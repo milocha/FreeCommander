@@ -11,7 +11,7 @@ packages:
 settings:
   base:
     SWIFT_VERSION: "5.0"
-    MARKETING_VERSION: "0.1.0"
+    MARKETING_VERSION: "0.2.0"
     CURRENT_PROJECT_VERSION: "1"
     CODE_SIGN_STYLE: Automatic
     CODE_SIGN_IDENTITY: "-"
@@ -25,13 +25,11 @@ targets:
     dependencies:
       - package: ZIPFoundation
         product: ZIPFoundation
-    settings:
-      base:
-        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
     info:
       path: FreeCommander/Info.plist
       properties:
         CFBundleDisplayName: FreeCommander
+        CFBundleIconFile: FreeCommander
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         LSApplicationCategoryType: public.app-category.file-management
