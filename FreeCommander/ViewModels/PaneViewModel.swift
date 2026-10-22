@@ -1,0 +1,232 @@
+import Foundation
+
+/// Stan jednego panelu (w stylu Total Commandera): bieżący katalog, zawartość,
+/// zaznaczenie, sortowanie i filtr. Panel sam zarządza security scope swojej
+/// lokalizacji głównej.
+@MainActor
+final class PaneViewModel: ObservableObject, Identifiable {
+    let paneIndex: Int
+    nonisolated var id: Int { paneIndex }
+
+    @Published private(set) var location: PaneLocation
+    @Published private(set) var directory: URL
+    @Published private(set) var items: [FileItem] = []
+    @Published var selectedURLs: Set<URL> = []
+    @Published private(set) var isLoading = false
+    @Published var errorMessage: String?
+    @Published var previewURL: URL?
+    @Published var filterText = ""
+    @Published var showFilter = false
+    @Published var sortField: SortField {
+        didSet { persistSort() }
+    }
+    @Published var sortDirection: SortDirection {
+        didSet { persistSort() }
+    }
+
+    private var generation = 0
+    private var acquiredScopeURL: URL?
+
+    init(paneIndex: Int, location: PaneLocation) {
+        self.paneIndex = paneIndex
+        self.location = location
+        let stored = UserDefaults.standard.string(forKey: "pane\(paneIndex).sort") ?? "name|asc"
+        let parts = stored.split(separator: "|").map(String.init)
+        self.sortField = SortField(rawValue: parts.first ?? "name") ?? .name
+        self.sortDirection = SortDirection.parse(parts.last)
+        self.directory = location.url
+        acquireScope()
+        reload()
+    }
+
+    deinit {
+        if let url = acquiredScopeURL {
+            ScopeAccess.shared.release(url)
+        }
+    }
+
+    // MARK: - Nawigacja
+
+    var rootURL: URL { location.url }
+
+    var canGoUp: Bool {
+        directory.standardizedFileURL != rootURL.standardizedFileURL
+    }
+
+    func navigate(to url: URL, location newLocation: PaneLocation) {
+        let newURL = url.standardizedFileURL
+        if newURL == directory.standardizedFileURL && newLocation == location {
+            reload()
+            return
+        }
+        releaseScope()
+        location = newLocation
+        directory = newURL
+        selectedURLs = []
+        previewURL = nil
+        filterText = ""
+        errorMessage = nil
+        UserDefaults.standard.set(newLocation.storageKey, forKey: "pane\(paneIndex).location")
+        acquireScope()
+        reload()
+    }
+
+    func goUp() {
+        guard canGoUp else { return }
+        navigate(to: directory.deletingLastPathComponent(), location: location)
+    }
+
+    func open(_ item: FileItem) {
+        if item.isDirectory {
+            navigate(to: item.url, location: location)
+        } else {
+            previewURL = item.url
+        }
+    }
+
+    // MARK: - Zawartość i zaznaczenie
+
+    var visibleItems: [FileItem] {
+        let base = filterText.isEmpty
+            ? items
+            : items.filter { $0.name.localizedCaseInsensitiveContains(filterText) }
+        return FileSystemService.sort(
+            base,
+            field: sortField,
+            direction: sortDirection,
+            directoriesFirst: SettingsStore.shared.directoriesFirst)
+    }
+
+    func selectedItems() -> [FileItem] {
+        items.filter { selectedURLs.contains($0.url) }
+    }
+
+    var selectionSize: Int64 {
+        selectedItems().reduce(0) { $0 + ($1.size ?? 0) }
+    }
+
+    func toggleSelection(_ item: FileItem) {
+        if selectedURLs.contains(item.url) {
+            selectedURLs.remove(item.url)
+        } else {
+            selectedURLs.insert(item.url)
+        }
+    }
+
+    func selectAllVisible() {
+        selectedURLs = Set(visibleItems.map(\.url))
+    }
+
+    func clearSelection() {
+        selectedURLs = []
+    }
+
+    var statusSummary: String {
+        String(format: NSLocalizedString("status.items", comment: ""), items.count)
+    }
+
+    var selectionSummary: String {
+        String(
+            format: NSLocalizedString("status.selected", comment: ""),
+            selectedURLs.count,
+            Formatters.size(selectionSize))
+    }
+
+    // MARK: - Szybkie operacje
+
+    func createFolder(named rawName: String) {
+        guard let name = validName(rawName) else { return }
+        let target = FileSystemService.uniqueURL(for: name, in: directory)
+        do {
+            try FileManager.default.createDirectory(at: target, withIntermediateDirectories: false)
+            reload()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func createTextFile(named rawName: String) {
+        guard let name = validName(rawName) else { return }
+        let finalName = name.hasSuffix(".txt") ? name : "\(name).txt"
+        let target = FileSystemService.uniqueURL(for: finalName, in: directory)
+        do {
+            try Data().write(to: target)
+            reload()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func rename(_ item: FileItem, to rawName: String) {
+        guard let name = validName(rawName) else { return }
+        do {
+            _ = try FileSystemService.renameSync(item.url, to: name)
+            selectedURLs.remove(item.url)
+            reload()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func duplicate(_ item: FileItem) {
+        do {
+            _ = try FileSystemService.copySync(from: item.url, toDirectory: directory)
+            reload()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    // MARK: - Wewnętrzne
+
+    func reload() {
+        generation += 1
+        let gen = generation
+        let dir = directory
+        let hidden = SettingsStore.shared.showHidden
+        isLoading = true
+        Task {
+            do {
+                let loaded = try await FileSystemService.list(at: dir, showHidden: hidden)
+                guard gen == self.generation else { return }
+                items = loaded
+                selectedURLs = selectedURLs.intersection(Set(loaded.map(\.url)))
+                isLoading = false
+            } catch {
+                guard gen == self.generation else { return }
+                items = []
+                isLoading = false
+                errorMessage = String(
+                    format: NSLocalizedString("error.listing", comment: ""),
+                    dir.lastPathComponent,
+                    error.localizedDescription)
+            }
+        }
+    }
+
+    private func validName(_ raw: String) -> String? {
+        let name = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty, !name.contains("/"), name != ".", name != ".." else {
+            errorMessage = NSLocalizedString("error.nameInvalid", comment: "")
+            return nil
+        }
+        return name
+    }
+
+    private func acquireScope() {
+        guard case .bookmark(let id) = location, let root = BookmarkStore.shared.resolve(id) else { return }
+        ScopeAccess.shared.acquire(root)
+        acquiredScopeURL = root
+    }
+
+    private func releaseScope() {
+        if let url = acquiredScopeURL {
+            ScopeAccess.shared.release(url)
+            acquiredScopeURL = nil
+        }
+    }
+
+    private func persistSort() {
+        UserDefaults.standard.set("\(sortField.rawValue)|\(sortDirection.storageKey)", forKey: "pane\(paneIndex).sort")
+    }
+}

@@ -1,0 +1,112 @@
+/* FreeCommander — polski */
+
+"app.title" = "FreeCommander";
+"pane.title" = "Panel %d";
+"pane.switcher" = "Aktywny panel";
+
+/* Przyciski i akcje */
+"action.copy" = "Kopiuj";
+"action.move" = "Przenieś";
+"action.delete" = "Usuń";
+"action.newFolder" = "Nowy folder";
+"action.newFile" = "Nowy plik tekstowy";
+"action.rename" = "Zmień nazwę";
+"action.duplicate" = "Duplikuj";
+"action.info" = "Informacje";
+"action.share" = "Udostępnij";
+"action.zip" = "Spakuj do ZIP";
+"action.zipSingle" = "Spakuj tylko ten element";
+"action.unzip" = "Rozpakuj";
+"action.openFolder" = "Otwórz folder";
+"action.preview" = "Podgląd";
+"action.select" = "Zaznacz";
+"action.selectAll" = "Zaznacz wszystko";
+"action.deselectAll" = "Odznacz wszystko";
+"action.filter" = "Filtruj…";
+"action.more" = "Więcej";
+"action.create" = "Utwórz";
+"action.save" = "Zapisz";
+
+/* Wspólne */
+"common.cancel" = "Anuluj";
+"common.ok" = "OK";
+"common.close" = "Zamknij";
+
+/* Sortowanie */
+"sort.title" = "Sortowanie";
+"sort.name" = "Nazwa";
+"sort.date" = "Data modyfikacji";
+"sort.size" = "Rozmiar";
+"sort.type" = "Typ";
+"sort.ascending" = "Rosnąco";
+"sort.descending" = "Malejąco";
+
+/* Ustawienia */
+"settings.title" = "Ustawienia";
+"settings.listSection" = "Listy plików";
+"settings.showHidden" = "Pokaż ukryte pliki";
+"settings.directoriesFirst" = "Katalogi najpierw";
+"settings.about" = "O aplikacji";
+"info.version" = "Wersja";
+"settings.note" = "Aplikacja widzi własny katalog Dokumenty (widoczny też w aplikacji Pliki) oraz katalogi udostępnione przez Pliki i dodane jako zakładki. iOS nie pozwala przeglądać całego systemu plików urządzenia.";
+
+/* Lokalizacje */
+"roots.title" = "Lokalizacje";
+"roots.builtin" = "Wbudowane";
+"roots.documents" = "Dokumenty";
+"roots.temporary" = "Tymczasowy";
+"roots.bookmarks" = "Zakładki (z aplikacji Pliki)";
+"roots.add" = "Dodaj lokalizację z aplikacji Pliki…";
+"roots.noBookmarks" = "Brak zakładek. Dodaj katalog (np. iCloud Drive) przyciskiem powyżej.";
+"roots.unavailable" = "Lokalizacja „%@” jest niedostępna. Dodaj ją ponownie.";
+
+/* Puste stany */
+"empty.title" = "Pusto";
+"empty.hint" = "Brak plików w tym katalogu. Przenieś pliki przez Udostępnij → Zapisz do plików (wybierając FreeCommander), podłącz urządzenie do Findera (Udostępnianie plików) albo dodaj lokalizację z aplikacji Pliki (ikona zakładek).";
+"empty.filter" = "Brak wyników";
+"empty.filterHint" = "Żaden plik w tym katalogu nie pasuje do filtra.";
+
+/* Potwierdzenia */
+"confirm.delete.title" = "Usunąć zaznaczone elementy?";
+"confirm.delete.message" = "Liczba elementów do trwałego usunięcia: %d.";
+"confirm.delete.single.title" = "Usunąć element?";
+"confirm.delete.single.message" = "Element „%@” zostanie trwale usunięty.";
+
+/* Nazwy i komunikaty */
+"prompt.folderName" = "Nazwa folderu";
+"prompt.fileName" = "Nazwa pliku";
+"prompt.newName" = "Nowa nazwa";
+
+/* Operacje */
+"op.copying" = "Kopiowanie";
+"op.moving" = "Przenoszenie";
+"op.deleting" = "Usuwanie";
+"op.zipping" = "Pakowanie…";
+"op.unzipping" = "Rozpakowywanie…";
+"op.zipDone" = "Utworzono archiwum: %@";
+"op.unzipDone" = "Rozpakowano do: %@";
+"archive.defaultName" = "Archiwum";
+
+/* Pasek stanu panelu */
+"status.items" = "%d el.";
+"status.selected" = "%d zazn. · %@";
+
+/* Informacje o pliku */
+"info.title" = "Informacje";
+"info.name" = "Nazwa";
+"info.type" = "Typ";
+"info.kindFolder" = "Folder";
+"info.kindFile" = "Plik";
+"info.size" = "Rozmiar";
+"info.dirSizeComputing" = "Obliczanie…";
+"info.modified" = "Zmodyfikowano";
+"info.created" = "Utworzono";
+"info.path" = "Ścieżka";
+"info.contents" = "Zawartość";
+"info.itemsCount" = "%d elementów";
+
+/* Błędy */
+"error.title" = "Błąd";
+"error.listing" = "Nie można odczytać katalogu „%@”: %@";
+"error.nameInvalid" = "Nieprawidłowa nazwa (pusta lub zawiera „/”).";
+"error.intoSelf" = "Nie można przenieść folderu do jego własnego podfolderu.";
