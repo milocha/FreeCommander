@@ -1,11 +1,14 @@
 import SwiftUI
 
-/// Lewy panel w stylu nowoczesnych aplikacji: ulubione (systemowe + własne),
-/// dyski z paskiem zajętości (GB i %) oraz stopka dysku aktywnego panelu.
+/// Panel boczny w stylu nowoczesnych aplikacji: ulubione (systemowe + własne),
+/// opcjonalnie dyski z paskiem zajętości (GB i %) i stopka dysku powiązanego
+/// panelu. Lewy sidebar pokazuje wszystko; prawy (`showsVolumes: false`)
+/// tylko ulubione, żeby szybko skakać folderami w prawym panelu.
 struct SidebarView: View {
     @EnvironmentObject private var favorites: FavoritesStore
-    @ObservedObject var activePane: PaneViewModel
+    @ObservedObject var pane: PaneViewModel
     let navigate: (URL) -> Void
+    var showsVolumes = true
 
     @State private var volumeEntries: [FavoriteLocation] = []
     @State private var usageByPath: [String: VolumeUsage] = [:]
@@ -32,22 +35,28 @@ struct SidebarView: View {
                         .foregroundStyle(.secondary)
                 }
             }
-            Section(NSLocalizedString("sidebar.volumes", comment: "")) {
-                ForEach(volumeEntries) { volume in
-                    volumeRow(volume)
-                }
-                if volumeEntries.isEmpty {
-                    Text("…")
-                        .foregroundStyle(.secondary)
+            if showsVolumes {
+                Section(NSLocalizedString("sidebar.volumes", comment: "")) {
+                    ForEach(volumeEntries) { volume in
+                        volumeRow(volume)
+                    }
+                    if volumeEntries.isEmpty {
+                        Text("…")
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
         }
         .listStyle(.sidebar)
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            SidebarDiskFooter(pane: activePane)
+            if showsVolumes {
+                SidebarDiskFooter(pane: pane)
+            }
         }
         .onAppear {
-            refreshVolumes()
+            if showsVolumes {
+                refreshVolumes()
+            }
         }
     }
 
@@ -106,7 +115,7 @@ struct SidebarView: View {
     }
 
     private func isActiveLocation(_ url: URL) -> Bool {
-        let panePath = activePane.directory.standardizedFileURL.path
+        let panePath = pane.directory.standardizedFileURL.path
         let locationPath = url.standardizedFileURL.path
         if panePath == locationPath { return true }
         return panePath.hasPrefix(locationPath.hasSuffix("/") ? locationPath : locationPath + "/")

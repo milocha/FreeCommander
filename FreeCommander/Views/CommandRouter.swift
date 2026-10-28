@@ -24,10 +24,19 @@ final class CommandRouter {
     var navigateTo: (URL) -> Void = { _ in }
     var otherPaneProvider: (PaneViewModel) -> PaneViewModel = { $0 }
 
+    // Klawisze w standardzie Total Commandera
+    var editFile: () -> Void = {}                    // F4
+    var zipSelection: () -> Void = {}                // Alt+F5
+    var unzipSelection: () -> Void = {}              // Alt+F6
+    var toggleMarkUnderCursor: () -> Void = {}       // Space / Insert
+    var groupSelect: (Bool) -> Void = { _ in }       // Gray+ / Gray- (zaznacz/odznacz grupę)
+    var showShortcuts: () -> Void = {}               // F1 — pomoc ze skrótami
+
     // Skróty w standardzie macOS (Finder)
     var clipboardCopy: () -> Void = {}
     var clipboardCut: () -> Void = {}
     var clipboardPaste: () -> Void = {}
+    var copyPath: () -> Void = {}
     var trashSelection: () -> Void = {}
     var toggleFilter: () -> Void = {}
     var setPane: (Int) -> Void = { _ in }
@@ -35,9 +44,11 @@ final class CommandRouter {
     private init() {}
 }
 
-/// Przechwytuje klawisze w stylu Total Commandera (gdy nie edytujemy pola tekstowego):
-/// Tab — zmiana panelu, Enter — otwórz, Backspace — poziom wyżej,
-/// F5 kopiuj, F6 przenieś, F7 nowy folder, F8 usuń, F2 zmień nazwę, Space — podgląd.
+/// Przechwytuje klawisze w standardzie Total Commandera (gdy nie edytujemy pola tekstowego):
+/// Tab — zmiana panelu, Enter — wejdź/otwórz, Backspace — poziom wyżej, Space/Insert —
+/// zaznacz pod kursorem, F2 odśwież, F3 podgląd, F4 edytuj, F5 kopiuj, F6 przenieś,
+/// Shift+F6 zmień nazwę, F7 nowy folder, F8 usuń, Alt+F5/F6 spakuj/rozpakuj,
+/// Ctrl+PgUp/PgDn poziom wyżej/niżej, Gray+/- zaznacz grupę, Alt+Enter właściwości.
 struct KeyboardMonitor: NSViewRepresentable {
     func makeCoordinator() -> Coordinator { Coordinator() }
 
@@ -74,31 +85,42 @@ struct KeyboardMonitor: NSViewRepresentable {
                 // Nie przeszkadzaj w edycji pól tekstowych (ścieżka, filtr).
                 if window.firstResponder is NSTextView { return event }
 
-                let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
-                let router = CommandRouter.shared
-                let plain = flags.isEmpty || flags == .function
-                let command = flags.contains(.command)
-                let commandShift = flags == [.command, .shift] || flags == [.command, .shift, .function]
+                // .function towarzyszy klawiszom funkcyjnym/nav — usuwamy przed porównaniem.
+                let base = event.modifierFlags
+                    .intersection(.deviceIndependentFlagsMask)
+                    .subtracting(.function)
+                let command = base.contains(.command)
+                let commandShift = base.contains(.command) && base.contains(.shift)
+                let commandOption = base.contains(.command) && base.contains(.option)
+                let controlOnly = base == .control
+                let optionOnly = base == .option
+                let shiftOnly = base == .shift
+                let plain = base.isEmpty
 
-                // Najpierw kombinacje z Shift, potem czysty Cmd, na końcu klawisze TC.
+                let router = CommandRouter.shared
+
+                // Najpierw skróty macOS (Cmd), potem kombinacje TC (Ctrl/Alt/Shift), na końcu klawisze TC.
                 switch event.keyCode {
-                case 45 where commandShift:  // Cmd+Shift+N — nowy folder (Finder)
+                // --- macOS (Finder) ---
+                case 45 where commandShift:  // Cmd+Shift+N — nowy folder
                     router.newFolder(); return nil
+                case 8 where commandOption:  // Cmd+Option+C — kopiuj ścieżkę
+                    router.copyPath(); return nil
                 case 7 where command:        // Cmd+X — wytnij pliki
                     router.clipboardCut(); return nil
                 case 8 where command:        // Cmd+C — kopiuje pliki
                     router.clipboardCopy(); return nil
                 case 9 where command:        // Cmd+V — wklej pliki
                     router.clipboardPaste(); return nil
-                case 34 where command:       // Cmd+I — informacje (Finder)
+                case 34 where command:       // Cmd+I — informacje
                     router.info(); return nil
-                case 51 where command:       // Cmd+Delete — do Kosza (Finder)
+                case 51 where command:       // Cmd+Delete — do Kosza
                     router.trashSelection(); return nil
                 case 31 where command:       // Cmd+O — otwórz
                     router.openSelected(); return nil
-                case 125 where command:      // Cmd+Down — otwórz (Finder)
+                case 125 where command:      // Cmd+Down — otwórz
                     router.openSelected(); return nil
-                case 126 where command:      // Cmd+Up — poziom wyżej (Finder)
+                case 126 where command:      // Cmd+Up — poziom wyżej
                     router.goUp(); return nil
                 case 18 where command:       // Cmd+1 — panel 1
                     router.setPane(0); return nil
@@ -108,26 +130,56 @@ struct KeyboardMonitor: NSViewRepresentable {
                     router.toggleFilter(); return nil
                 case 15 where command:       // Cmd+R — odśwież
                     router.refresh(); return nil
-                case 48 where plain:  // Tab
-                    router.switchPane(); return nil
-                case 36 where plain:  // Enter
-                    router.openSelected(); return nil
-                case 49 where plain:  // Space
-                    router.preview(); return nil
-                case 51 where plain:  // Backspace
-                    router.goUp(); return nil
-                case 96 where plain:  // F5
-                    router.copy(); return nil
-                case 97 where plain:  // F6
-                    router.move(); return nil
-                case 99 where plain:  // F7
-                    router.newFolder(); return nil
-                case 100 where plain: // F8
-                    router.deleteSelection(); return nil
-                case 145 where plain: // F2
-                    router.rename(); return nil
-                case 0 where flags == .command: // Cmd+A
+                case 0 where command:        // Cmd+A — zaznacz wszystko
                     router.selectAll(); return nil
+                // --- kombinacje Total Commandera ---
+                case 12 where controlOnly:   // Ctrl+Q — szybki podgląd
+                    router.preview(); return nil
+                case 36 where optionOnly:    // Alt+Enter — właściwości pliku
+                    router.info(); return nil
+                case 125 where controlOnly:  // Ctrl+PgDn — wejdź do katalogu / otwórz
+                    router.openSelected(); return nil
+                case 126 where controlOnly:  // Ctrl+PgUp — poziom wyżej
+                    router.goUp(); return nil
+                case 96 where optionOnly:    // Alt+F5 — spakuj
+                    router.zipSelection(); return nil
+                case 97 where optionOnly:    // Alt+F6 — rozpakuj
+                    router.unzipSelection(); return nil
+                case 97 where shiftOnly:     // Shift+F6 — zmień nazwę
+                    router.rename(); return nil
+                // --- klawisze Total Commandera ---
+                case 122 where plain:  // F1 — pomoc (skróty klawiszowe)
+                    router.showShortcuts(); return nil
+                case 48 where plain:   // Tab — przełącz panel
+                    router.switchPane(); return nil
+                case 36 where plain:   // Enter — wejdź do folderu / otwórz
+                    router.openSelected(); return nil
+                case 49 where plain:   // Space — zaznacz pod kursorem
+                    router.toggleMarkUnderCursor(); return nil
+                case 114 where plain:  // Insert — zaznacz pod kursorem i w dół
+                    router.toggleMarkUnderCursor(); return nil
+                case 51 where plain:   // Backspace — poziom wyżej
+                    router.goUp(); return nil
+                case 117 where plain:  // Delete — usuń (dialog)
+                    router.deleteSelection(); return nil
+                case 81 where plain:   // Gray+ — zaznacz grupę (wzorzec)
+                    router.groupSelect(true); return nil
+                case 78 where plain:   // Gray- — odznacz grupę (wzorzec)
+                    router.groupSelect(false); return nil
+                case 120 where plain:  // F2 — odśwież (jak w TC)
+                    router.refresh(); return nil
+                case 99 where plain:   // F3 — podgląd
+                    router.preview(); return nil
+                case 118 where plain:  // F4 — edytuj
+                    router.editFile(); return nil
+                case 96 where plain:   // F5 — kopiuj
+                    router.copy(); return nil
+                case 97 where plain:   // F6 — przenieś
+                    router.move(); return nil
+                case 98 where plain:   // F7 — nowy folder
+                    router.newFolder(); return nil
+                case 100 where plain:  // F8 — usuń
+                    router.deleteSelection(); return nil
                 default:
                     return event
                 }
@@ -140,6 +192,8 @@ struct KeyboardMonitor: NSViewRepresentable {
 /// klawisze TC (F5–F8/F2/Tab/Enter/Space) przechwytuje KeyboardMonitor
 /// (AppKit nie wspiera klawiszy funkcyjnych jako skrótów pozycji menu).
 struct CommanderCommands: Commands {
+    @ObservedObject var defaultFolderBrowser = DefaultFolderBrowser.shared
+
     var body: some Commands {
         CommandMenu(NSLocalizedString("menu.files", comment: "")) {
             Button(NSLocalizedString("menu.clipboardCopy", comment: "")) { CommandRouter.shared.clipboardCopy() }
@@ -148,6 +202,8 @@ struct CommanderCommands: Commands {
                 .keyboardShortcut("x", modifiers: .command)
             Button(NSLocalizedString("menu.clipboardPaste", comment: "")) { CommandRouter.shared.clipboardPaste() }
                 .keyboardShortcut("v", modifiers: .command)
+            Button(NSLocalizedString("menu.copyPath", comment: "")) { CommandRouter.shared.copyPath() }
+                .keyboardShortcut("c", modifiers: [.command, .option])
             Divider()
             Button(NSLocalizedString("menu.copy", comment: "")) { CommandRouter.shared.copy() }
             Button(NSLocalizedString("menu.move", comment: "")) { CommandRouter.shared.move() }
@@ -164,6 +220,19 @@ struct CommanderCommands: Commands {
             Button(NSLocalizedString("menu.preview", comment: "")) { CommandRouter.shared.preview() }
             Button(NSLocalizedString("menu.open", comment: "")) { CommandRouter.shared.openSelected() }
                 .keyboardShortcut("o", modifiers: .command)
+            Divider()
+            // Domyślna aplikacja systemowa do otwierania folderów (Launch Services).
+            Button(
+                defaultFolderBrowser.isDefault
+                    ? NSLocalizedString("menu.folderHandlerFinder", comment: "")
+                    : NSLocalizedString("menu.folderHandlerFreeCommander", comment: "")
+            ) {
+                if defaultFolderBrowser.isDefault {
+                    defaultFolderBrowser.restoreFinder()
+                } else {
+                    defaultFolderBrowser.makeDefault()
+                }
+            }
         }
         CommandMenu(NSLocalizedString("menu.go", comment: "")) {
             let userFavorites = FavoritesStore.shared.favorites
@@ -194,6 +263,9 @@ struct CommanderCommands: Commands {
             Button(NSLocalizedString("action.refresh", comment: "")) { CommandRouter.shared.refresh() }
                 .keyboardShortcut("r", modifiers: .command)
         }
+        CommandMenu(NSLocalizedString("menu.help", comment: "")) {
+            Button(NSLocalizedString("help.title", comment: "")) { CommandRouter.shared.showShortcuts() }
+                .keyboardShortcut("?", modifiers: [.command, .shift])
+        }
     }
 }
-

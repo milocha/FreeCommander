@@ -21,9 +21,11 @@
 "action.openFolder" = "Otwórz folder";
 "action.preview" = "Podgląd";
 "action.revealInFinder" = "Pokaż w Finderze";
+"action.copyPath" = "Kopiuj ścieżkę";
 "action.copyToOther" = "Kopiuj do drugiego panelu";
 "action.moveToOther" = "Przenieś do drugiego panelu";
 "action.select" = "Zaznacz";
+"action.deselect" = "Odznacz";
 "action.selectAll" = "Zaznacz wszystko";
 "action.deselectAll" = "Odznacz wszystko";
 "action.filter" = "Filtruj…";
@@ -31,6 +33,8 @@
 "action.create" = "Utwórz";
 "action.save" = "Zapisz";
 "action.refresh" = "Odśwież";
+"action.toggleHidden" = "Ukryte";
+"action.toggleHidden.help" = "Pokaż/ukryj ukryte pliki (⌘⇧.)";
 
 /* Wspólne */
 "common.cancel" = "Anuluj";
@@ -55,9 +59,9 @@
 "menu.copy" = "Kopiuj do drugiego panelu (F5)";
 "menu.move" = "Przenieś do drugiego panelu (F6)";
 "menu.newFolder" = "Nowy folder (F7)";
-"menu.rename" = "Zmień nazwę (F2)";
+"menu.rename" = "Zmień nazwę (Shift+F6)";
 "menu.delete" = "Usuń zaznaczenie (F8)";
-"menu.preview" = "Podgląd (Space)";
+"menu.preview" = "Podgląd (F3)";
 "menu.open" = "Otwórz (Enter)";
 "menu.toggleHidden" = "Pokaż/ukryj ukryte pliki";
 
@@ -85,6 +89,34 @@
 "prompt.folderName" = "Nazwa folderu";
 "prompt.fileName" = "Nazwa pliku";
 "prompt.newName" = "Nowa nazwa";
+"prompt.pattern" = "Wzorzec (np. *.txt | raport?)";
+
+/* Zaznaczanie grupowe (Gray+/- jak w TC) */
+"select.group.select.title" = "Zaznacz grupę — podaj wzorzec";
+"select.group.deselect.title" = "Odznacz grupę — podaj wzorzec";
+
+/* Pomoc — skróty klawiszowe */
+"menu.help" = "Pomoc";
+"help.title" = "Skróty klawiszowe";
+"help.section.tcNav" = "Nawigacja (jak w Total Commanderze)";
+"help.section.tcSel" = "Zaznaczanie";
+"help.section.tcOps" = "Operacje na plikach";
+"help.section.mac" = "Skróty macOS (jak w Finderze)";
+"help.openUnderCursor" = "Wejdź do folderu / otwórz plik pod kursorem";
+"help.parentDir" = "Poziom wyżej";
+"help.switchPane" = "Przełącz aktywny panel";
+"help.markCursor" = "Zaznacz element pod kursorem i przejdź w dół";
+"help.groupPattern" = "Zaznacz / odznacz grupę wg wzorca (np. *.txt | raport*)";
+"help.editFile" = "Edytuj plik w TextEdit";
+"help.zipUnzip" = "Spakuj do ZIP / rozpakuj archiwum";
+
+/* Domyślna aplikacja do otwierania folderów */
+"menu.folderHandlerFreeCommander" = "Otwieraj foldery domyślnie w FreeCommanderze";
+"menu.folderHandlerFinder" = "Przywróć Finder do otwierania folderów";
+"help.properties" = "Właściwości pliku";
+"help.clipboardFiles" = "Kopiuj / wytnij / wklej pliki (także z Findera)";
+"help.panel1_2" = "Aktywuj panel 1 / panel 2";
+"help.hint" = "To okno otworzysz też klawiszem F1 lub z menu Pomoc.";
 
 /* Operacje */
 "op.copying" = "Kopiowanie";
@@ -138,6 +170,7 @@
 "menu.clipboardCopy" = "Kopiuj pliki";
 "menu.clipboardCut" = "Wytnij pliki";
 "menu.clipboardPaste" = "Wklej pliki";
+"menu.copyPath" = "Kopiuj ścieżkę";
 "menu.info" = "Informacje";
 "menu.trash" = "Przenieś do Kosza";
 "clipboard.empty" = "Schowek jest pusty — skopiuj pliki ⌘C (także z Findera) i wklej ⌘V.";

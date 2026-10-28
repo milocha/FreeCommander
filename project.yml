@@ -34,6 +34,13 @@ targets:
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         LSApplicationCategoryType: public.app-category.file-management
         LSMinimumSystemVersion: "14.0"
+        # Rejestracja jako przeglądarka folderów: pozycja w „Otwórz za pomocą”
+        # dla folderów + możliwość ustawienia domyślnej aplikacji (menu Pliki).
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: Folder
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            LSItemContentTypes: [public.folder, public.directory]
   FreeCommanderTests:
     type: bundle.unit-test
     platform: macOS

@@ -37,6 +37,12 @@ struct FreeCommanderApp: App {
                 .environmentObject(OperationsEngine.shared)
                 .environmentObject(FavoritesStore.shared)
                 .frame(minWidth: 980, minHeight: 560)
+                // Otwarcie folderu z zewnątrz („Otwórz za pomocą”, domyślna
+                // aplikacja do folderów) — przejdź do niego w aktywnym panelu.
+                .onOpenURL { url in
+                    guard url.hasDirectoryPath else { return }
+                    CommandRouter.shared.navigateTo(url)
+                }
         }
         .windowStyle(.automatic)
         .defaultSize(width: 1150, height: 700)

@@ -1,6 +1,14 @@
 import AppKit
 import SwiftUI
 
+/// Sterowanie kursorem listy plików z poziomu PaneViewModel
+/// (Space/Insert z KeyboardMonitor trafiają tutaj przez mostek).
+@MainActor
+protocol PaneListController: AnyObject {
+    /// Przełącz zaznaczenie elementu pod kursorem i przesuń kursor w dół (TC).
+    func toggleMarkUnderCursorAndAdvance()
+}
+
 /// Natywna tabela plików (NSTableView): wielokrotne zaznaczanie z cmd/shift,
 /// dwuklik otwiera, kliknięcie nagłówka sortuje, strzałki przechodzą po liście.
 struct FileListView: NSViewRepresentable {
@@ -27,7 +35,9 @@ struct FileListView: NSViewRepresentable {
         nameColumn.title = NSLocalizedString("col.name", comment: "")
         nameColumn.width = Coordinator.storedWidth(for: "name", fallback: 440)
         nameColumn.minWidth = 120
-        nameColumn.resizingMask = [.autoresizingMask, .userResizingMask]
+        // Dopasowaniem kolumn do szerokości panelu zajmuje się fitColumns(_:);
+        // autoresizing AppKit fightowałby z nim przy zmianie rozmiaru okna.
+        nameColumn.resizingMask = .userResizingMask
         nameColumn.sortDescriptorPrototype = NSSortDescriptor(
             key: "name", ascending: true,
             selector: #selector(NSString.localizedCaseInsensitiveCompare(_:)))
@@ -61,8 +71,14 @@ struct FileListView: NSViewRepresentable {
         let scrollView = NSScrollView()
         scrollView.documentView = table
         scrollView.hasVerticalScroller = true
+        // Bezpiecznik dla ekstremalnie wąskich paneli (poniżej sumy minimów
+        // kolumn): wtedy kolumny można dosięgnąć przewijaniem poziomym
+        // (shift + kółko myszy / dwa palce poziomo na trackpadzie).
+        scrollView.hasHorizontalScroller = true
         scrollView.autohidesScrollers = true
         context.coordinator.table = table
+        context.coordinator.clipView = scrollView.contentView
+        pane.listController = context.coordinator
         context.coordinator.installResizeObserver()
         context.coordinator.sync()
         return scrollView
@@ -70,21 +86,26 @@ struct FileListView: NSViewRepresentable {
 
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
         context.coordinator.sync()
+        context.coordinator.fitColumns(to: scrollView.contentView.bounds.width)
     }
 
     // MARK: - Koordynator
 
     @MainActor
-    final class Coordinator: NSObject, NSTableViewDataSource, NSTableViewDelegate, NSMenuDelegate {
+    final class Coordinator: NSObject, NSTableViewDataSource, NSTableViewDelegate, NSMenuDelegate, PaneListController {
         private let pane: PaneViewModel
         private let onActivate: () -> Void
         private let onOpen: (FileItem) -> Void
 
         var table: NSTableView?
+        var clipView: NSClipView?
+        /// Wiersz pod kursorem TC (niezależny od zestawu zaznaczeń).
+        var cursorRow: Int = -1
         private var lastItems: [FileItem] = []
         private var syncingSelection = false
         private var pendingMenuItem: FileItem?
         private var resizeObserver: NSObjectProtocol?
+        private var frameObserver: NSObjectProtocol?
         private var widthSaveTask: DispatchWorkItem?
 
         init(pane: PaneViewModel, onActivate: @escaping () -> Void, onOpen: @escaping (FileItem) -> Void) {
@@ -97,6 +118,9 @@ struct FileListView: NSViewRepresentable {
             if let resizeObserver {
                 NotificationCenter.default.removeObserver(resizeObserver)
             }
+            if let frameObserver {
+                NotificationCenter.default.removeObserver(frameObserver)
+            }
         }
 
         // MARK: Szerokości kolumn (zmieniane dragiem, zapamiętywane globalnie)
@@ -108,14 +132,64 @@ struct FileListView: NSViewRepresentable {
 
         func installResizeObserver() {
             guard let table, resizeObserver == nil else { return }
+            // Drag użytkownika: kolumny mają dalej wypełniać panel (jak w Finderze),
+            // ale kolumna trzymana kursorem nie może być cofana przez dopasowanie.
             resizeObserver = NotificationCenter.default.addObserver(
                 forName: NSTableView.columnDidResizeNotification,
                 object: table,
-                queue: .main) { [weak self] _ in
+                queue: .main) { [weak self] notification in
                     MainActor.assumeIsolated {
-                        self?.scheduleColumnWidthSave()
+                        guard let self else { return }
+                        let dragged = notification.userInfo?["NSTableColumn"] as? NSTableColumn
+                        self.fitColumns(to: self.clipView?.bounds.width ?? 0, protecting: dragged)
+                        self.scheduleColumnWidthSave()
                     }
                 }
+            // Zmiana szerokości panelu (resize okna, sidebary, scroller pionowy).
+            if let clipView, frameObserver == nil {
+                clipView.postsFrameChangedNotifications = true
+                frameObserver = NotificationCenter.default.addObserver(
+                    forName: NSView.frameDidChangeNotification,
+                    object: clipView,
+                    queue: .main) { [weak self] _ in
+                        MainActor.assumeIsolated {
+                            self?.fitColumns(to: self?.clipView?.bounds.width ?? 0)
+                        }
+                    }
+            }
+        }
+
+        /// Dopasowanie kolumn do widocznej szerokości panelu w duchu TC/Findera:
+        /// nadmiar (szersze kolumny niż panel) zwijany jest proporcjonalnie do
+        /// minimów kolumn, a luz rozciąga kolumnę nazwy. Kolumna przeciągana
+        /// właśnie kursorem (`protecting`) nie jest cofana. Poniżej sumy minimów
+        /// zostaje przewijanie poziome — nic nie jest ucinane bez dostępu.
+        func fitColumns(to available: CGFloat, protecting protected: NSTableColumn? = nil) {
+            guard let table, available > 0, table.tableColumns.count > 1 else { return }
+            let columns = table.tableColumns
+            var widths = columns.map(\.width)
+            let mins = columns.map(\.minWidth)
+            let total = widths.reduce(0, +)
+            if total < available {
+                widths[0] += available - total
+            } else if total > available {
+                var shrinkable: CGFloat = 0
+                for index in widths.indices where columns[index] !== protected {
+                    shrinkable += max(widths[index] - mins[index], 0)
+                }
+                guard shrinkable > 0 else { return }
+                let excess = min(total - available, shrinkable)
+                for index in widths.indices where columns[index] !== protected {
+                    let room = max(widths[index] - mins[index], 0)
+                    widths[index] -= excess * room / shrinkable
+                }
+            }
+            for (index, column) in columns.enumerated() where column !== protected {
+                let target = max(widths[index], column.minWidth)
+                if abs(column.width - target) > 0.5 {
+                    column.width = target
+                }
+            }
         }
 
         private func scheduleColumnWidthSave() {
@@ -217,7 +291,38 @@ struct FileListView: NSViewRepresentable {
                 return items[row].url
             })
             pane.selectedURLs = selected
+            // Kursor TC: ostatnio kliknięty wiersz, po strzałce — bieżący wiersz.
+            if table.clickedRow >= 0 {
+                cursorRow = table.clickedRow
+            } else if table.selectedRow >= 0 {
+                cursorRow = table.selectedRow
+            }
+            pane.cursorURL = (cursorRow >= 0 && cursorRow < items.count) ? items[cursorRow].url : nil
             onActivate()
+        }
+
+        // MARK: Kursor TC (Space / Insert)
+
+        /// Space/Insert w standardzie TC: przełącz zaznaczenie wiersza pod kursorem
+        /// bez ruszania pozostałych zaznaczeń, potem kursor o wiersz w dół.
+        func toggleMarkUnderCursorAndAdvance() {
+            guard let table else { return }
+            let items = pane.visibleItems
+            guard cursorRow >= 0, cursorRow < items.count else { return }
+            let item = items[cursorRow]
+            syncingSelection = true
+            if pane.selectedURLs.contains(item.url) {
+                pane.selectedURLs.remove(item.url)
+                table.deselectRow(cursorRow)
+            } else {
+                pane.selectedURLs.insert(item.url)
+                table.selectRowIndexes(IndexSet(integer: cursorRow), byExtendingSelection: true)
+            }
+            syncingSelection = false
+            let next = min(cursorRow + 1, items.count - 1)
+            cursorRow = next
+            pane.cursorURL = items[next].url
+            table.scrollRowToVisible(next)
         }
 
         @objc func doubleClicked(_ sender: Any?) {
@@ -266,6 +371,9 @@ struct FileListView: NSViewRepresentable {
             menu.addItem(
                 withTitle: NSLocalizedString("action.revealInFinder", comment: ""),
                 action: #selector(menuReveal), keyEquivalent: "").target = self
+            menu.addItem(
+                withTitle: NSLocalizedString("action.copyPath", comment: ""),
+                action: #selector(menuCopyPath), keyEquivalent: "").target = self
             menu.addItem(.separator())
             menu.addItem(
                 withTitle: NSLocalizedString("action.copyToOther", comment: ""),
@@ -305,6 +413,10 @@ struct FileListView: NSViewRepresentable {
         @objc private func menuOpen() { guard let item = pendingMenuItem else { return }; onOpen(item) }
         @objc private func menuPreview() { guard let item = pendingMenuItem else { return }; pane.requestPreview(item) }
         @objc private func menuReveal() { guard let item = pendingMenuItem else { return }; pane.revealInFinder(item) }
+        @objc private func menuCopyPath() {
+            let targets = pane.selectedItems().isEmpty ? [pendingMenuItem].compactMap { $0 } : pane.selectedItems()
+            pane.copyPaths(of: targets)
+        }
         @objc private func menuCopy() { operations.copySelection(from: pane, to: otherPane()) }
         @objc private func menuMove() { operations.moveSelection(from: pane, to: otherPane()) }
         @objc private func menuRename() { guard let item = pendingMenuItem else { return }; pane.renameItem = item }

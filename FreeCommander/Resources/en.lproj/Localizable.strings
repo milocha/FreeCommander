@@ -21,9 +21,11 @@
 "action.openFolder" = "Open folder";
 "action.preview" = "Preview";
 "action.revealInFinder" = "Reveal in Finder";
+"action.copyPath" = "Copy Path";
 "action.copyToOther" = "Copy to other pane";
 "action.moveToOther" = "Move to other pane";
 "action.select" = "Select";
+"action.deselect" = "Deselect";
 "action.selectAll" = "Select all";
 "action.deselectAll" = "Deselect all";
 "action.filter" = "Filter…";
@@ -31,6 +33,8 @@
 "action.create" = "Create";
 "action.save" = "Save";
 "action.refresh" = "Refresh";
+"action.toggleHidden" = "Hidden";
+"action.toggleHidden.help" = "Show/hide hidden files (⌘⇧.)";
 
 /* Common */
 "common.cancel" = "Cancel";
@@ -55,9 +59,9 @@
 "menu.copy" = "Copy to other pane (F5)";
 "menu.move" = "Move to other pane (F6)";
 "menu.newFolder" = "New folder (F7)";
-"menu.rename" = "Rename (F2)";
+"menu.rename" = "Rename (Shift+F6)";
 "menu.delete" = "Delete selection (F8)";
-"menu.preview" = "Preview (Space)";
+"menu.preview" = "Preview (F3)";
 "menu.open" = "Open (Enter)";
 "menu.toggleHidden" = "Show/hide hidden files";
 
@@ -85,6 +89,34 @@
 "prompt.folderName" = "Folder name";
 "prompt.fileName" = "File name";
 "prompt.newName" = "New name";
+"prompt.pattern" = "Pattern (e.g. *.txt | report?)";
+
+/* Group selection (TC Gray+/-) */
+"select.group.select.title" = "Select group — enter pattern";
+"select.group.deselect.title" = "Deselect group — enter pattern";
+
+/* Help — keyboard shortcuts */
+"menu.help" = "Help";
+"help.title" = "Keyboard Shortcuts";
+"help.section.tcNav" = "Navigation (Total Commander style)";
+"help.section.tcSel" = "Selecting";
+"help.section.tcOps" = "File operations";
+"help.section.mac" = "macOS shortcuts (Finder style)";
+"help.openUnderCursor" = "Enter folder / open file under cursor";
+"help.parentDir" = "Go up one level";
+"help.switchPane" = "Switch active pane";
+"help.markCursor" = "Select item under cursor and move down";
+"help.groupPattern" = "Select / deselect group by pattern (e.g. *.txt | report*)";
+"help.editFile" = "Edit file in TextEdit";
+"help.zipUnzip" = "Pack to ZIP / extract archive";
+"help.properties" = "File properties";
+"help.clipboardFiles" = "Copy / cut / paste files (also with Finder)";
+"help.panel1_2" = "Activate pane 1 / pane 2";
+"help.hint" = "You can also open this window with F1 or from the Help menu.";
+
+/* Default app for opening folders */
+"menu.folderHandlerFreeCommander" = "Open folders in FreeCommander by default";
+"menu.folderHandlerFinder" = "Restore Finder for opening folders";
 
 /* Operations */
 "op.copying" = "Copying";
@@ -138,6 +170,7 @@
 "menu.clipboardCopy" = "Copy files";
 "menu.clipboardCut" = "Cut files";
 "menu.clipboardPaste" = "Paste files";
+"menu.copyPath" = "Copy Path";
 "menu.info" = "Info";
 "menu.trash" = "Move to Trash";
 "clipboard.empty" = "Clipboard is empty — copy files with ⌘C (also from Finder) and paste with ⌘V.";

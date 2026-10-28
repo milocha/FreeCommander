@@ -17,6 +17,10 @@ final class PaneViewModel: ObservableObject, Identifiable {
     @Published var errorMessage: String?
     @Published var filterText = ""
     @Published var showFilter = false
+    /// Element pod kursorem listy (klawiatura TC: Enter, Space, Insert).
+    @Published var cursorURL: URL?
+    /// Mostek do tabeli (NSTableView) — przewijanie/kursor przy Space/Insert.
+    weak var listController: PaneListController?
     /// Żądania dialogów ustawiane też z zewnątrz (klawiatura, menu kontekstowe).
     @Published var previewURL: URL?
     @Published var infoItem: FileItem?
@@ -86,8 +90,25 @@ final class PaneViewModel: ObservableObject, Identifiable {
         }
     }
 
+    /// F4 — edytuj plik w domyślnym edytorze tekstu (TextEdit).
+    func edit(_ item: FileItem) {
+        guard !item.isDirectory else { return }
+        let editor = URL(fileURLWithPath: "/System/Applications/TextEdit.app")
+        let configuration = NSWorkspace.OpenConfiguration()
+        NSWorkspace.shared.open([item.url], withApplicationAt: editor, configuration: configuration)
+    }
+
     func revealInFinder(_ item: FileItem) {
         NSWorkspace.shared.activateFileViewerSelecting([item.url])
+    }
+
+    /// Wkleja ścieżki (jedna na wiersz) zaznaczonych elementów do schowka.
+    func copyPaths(of items: [FileItem]) {
+        let paths = items.map { $0.url.path(percentEncoded: false) }
+        guard !paths.isEmpty else { return }
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(paths.joined(separator: "\n"), forType: .string)
     }
 
     func requestPreview(_ item: FileItem) {
@@ -121,6 +142,42 @@ final class PaneViewModel: ObservableObject, Identifiable {
             selectedURLs.remove(item.url)
         } else {
             selectedURLs.insert(item.url)
+        }
+    }
+
+    // MARK: Kursor listy (klawiatura TC)
+
+    /// Element pod kursorem, o ile nadal widnieje na liście bieżącego katalogu.
+    func cursorItem() -> FileItem? {
+        guard let cursorURL else { return nil }
+        return items.first { $0.url == cursorURL }
+    }
+
+    /// Space/Insert — przełącz zaznaczenie elementu pod kursorem i przejdź w dół.
+    func toggleMarkUnderCursorAndAdvance() {
+        listController?.toggleMarkUnderCursorAndAdvance()
+    }
+
+    /// Gray+ / Gray- — zaznacz/odznacz grupę wg wzorca (wildcardy `*`, `?`, alternatywy `|`).
+    func selectGroup(matching rawPattern: String, select: Bool) {
+        let pattern = rawPattern.trimmingCharacters(in: .whitespaces)
+        guard !pattern.isEmpty else { return }
+        let regexes = pattern.split(separator: "|", omittingEmptySubsequences: true)
+            .compactMap { part -> NSRegularExpression? in
+                let wildcard = NSRegularExpression.escapedPattern(for: String(part))
+                    .replacingOccurrences(of: "\\*", with: ".*")
+                    .replacingOccurrences(of: "\\?", with: ".")
+                return try? NSRegularExpression(pattern: "^\(wildcard)$", options: .caseInsensitive)
+            }
+        let matched = visibleItems.filter { item in
+            let range = NSRange(item.name.startIndex..., in: item.name)
+            return regexes.contains { $0.firstMatch(in: item.name, range: range) != nil }
+        }
+        let urls = Set(matched.map(\.url))
+        if select {
+            selectedURLs.formUnion(urls)
+        } else {
+            selectedURLs.subtract(urls)
         }
     }
 

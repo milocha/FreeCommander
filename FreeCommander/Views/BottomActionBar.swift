@@ -2,6 +2,7 @@ import SwiftUI
 
 struct BottomActionBar: View {
     @EnvironmentObject private var operations: OperationsEngine
+    @EnvironmentObject private var settings: SettingsStore
     let activePane: PaneViewModel
     let onNewFolder: () -> Void
     let onNewFile: () -> Void
@@ -39,6 +40,8 @@ struct BottomActionBar: View {
                     }
                 }
                 divider
+                hiddenToggleButton
+                divider
                 Menu {
                     Button(NSLocalizedString("action.newFile", comment: ""), action: onNewFile)
                     Button(NSLocalizedString("action.info", comment: "")) { CommandRouter.shared.info() }
@@ -59,6 +62,32 @@ struct BottomActionBar: View {
         Rectangle()
             .fill(Color.primary.opacity(0.12))
             .frame(width: 1, height: 26)
+    }
+
+    /// Szybki przełącznik ukrytych plików (skrót ⌘⇧., jak w Finderze).
+    /// Ikona i kolor pokazują stan: wypełnione oko = ukryte pliki widoczne.
+    private var hiddenToggleButton: some View {
+        Button {
+            CommandRouter.shared.toggleHidden()
+        } label: {
+            VStack(spacing: 2) {
+                Image(systemName: settings.showHidden ? "eye.fill" : "eye.slash")
+                    .font(.system(size: 14))
+                    .foregroundStyle(settings.showHidden ? Color.accentColor : Color.primary)
+                    .frame(height: 16)
+                Text("action.toggleHidden")
+                    .font(.caption2)
+                    .lineLimit(1)
+            }
+            .frame(width: 62)
+            .padding(.vertical, 3)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.borderless)
+        .disabled(operations.isRunning)
+        .opacity(operations.isRunning ? 0.35 : 1)
+        .help(NSLocalizedString("action.toggleHidden.help", comment: ""))
+        .fixedSize()
     }
 
     private func button(

@@ -12,6 +12,10 @@ struct ContentView: View {
     @State private var newFolderPresented = false
     @State private var newFilePresented = false
     @State private var newName = ""
+    @State private var groupPatternPresented = false
+    @State private var groupPatternText = ""
+    @State private var groupSelecting = true
+    @State private var shortcutsPresented = false
 
     private var activePane: PaneViewModel { activePaneIndex == 0 ? leftPane : rightPane }
     private var otherPane: PaneViewModel { activePaneIndex == 0 ? rightPane : leftPane }
@@ -19,8 +23,8 @@ struct ContentView: View {
     var body: some View {
         NavigationSplitView {
             SidebarView(
-                activePane: activePane,
-                navigate: { url in activePane.navigate(to: url) })
+                pane: leftPane,
+                navigate: { url in leftPane.navigate(to: url) })
                 .navigationSplitViewColumnWidth(min: 190, ideal: 230, max: 320)
         } detail: {
             VStack(spacing: 0) {
@@ -32,6 +36,13 @@ struct ContentView: View {
                     paneView(leftPane, index: 0)
                     Rectangle().fill(Color.primary.opacity(0.2)).frame(width: 1)
                     paneView(rightPane, index: 1)
+                    Rectangle().fill(Color.primary.opacity(0.2)).frame(width: 1)
+                    // Prawy sidebar: tylko ulubione, nawiguje prawy panel.
+                    SidebarView(
+                        pane: rightPane,
+                        navigate: { url in rightPane.navigate(to: url) },
+                        showsVolumes: false)
+                        .frame(minWidth: 150, idealWidth: 170, maxWidth: 240)
                 }
                 BottomActionBar(
                     activePane: activePane,
@@ -47,7 +58,14 @@ struct ContentView: View {
             newFolderPresented: $newFolderPresented,
             newFilePresented: $newFilePresented,
             newName: $newName,
+            groupPatternPresented: $groupPatternPresented,
+            groupPatternText: $groupPatternText,
+            groupSelecting: groupSelecting,
             activePane: activePane))
+        .background(KeyboardMonitor())
+        .sheet(isPresented: $shortcutsPresented) {
+            ShortcutsHelpView()
+        }
         .onChange(of: activePaneIndex) { newValue in
             UserDefaults.standard.set(newValue, forKey: "activePane")
             bindRouter()
@@ -70,16 +88,18 @@ struct ContentView: View {
         router.newFolder = { newName = ""; newFolderPresented = true }
         router.newFile = { newName = ""; newFilePresented = true }
         router.deleteSelection = { deleteConfirmPresented = true }
+        // W standardzie TC akcje działają na elemencie pod kursorem,
+        // a dopiero gdy go nie ma — na pierwszym z zaznaczonych.
         router.rename = {
-            guard let first = activePane.selectedItems().first else { return }
+            guard let first = activePane.cursorItem() ?? activePane.selectedItems().first else { return }
             activePane.renameItem = first
         }
         router.preview = {
-            guard let first = activePane.selectedItems().first else { return }
+            guard let first = activePane.cursorItem() ?? activePane.selectedItems().first else { return }
             activePane.requestPreview(first)
         }
         router.openSelected = {
-            if let first = activePane.selectedItems().first {
+            if let first = activePane.cursorItem() ?? activePane.selectedItems().first {
                 activePane.open(first)
             }
         }
@@ -87,9 +107,27 @@ struct ContentView: View {
         router.goUp = { activePane.goUp() }
         router.selectAll = { activePane.selectAllVisible() }
         router.info = {
-            guard let first = activePane.selectedItems().first else { return }
+            guard let first = activePane.cursorItem() ?? activePane.selectedItems().first else { return }
             activePane.infoItem = first
         }
+        // Klawisze w standardzie Total Commandera
+        router.editFile = {
+            guard let first = activePane.cursorItem() ?? activePane.selectedItems().first else { return }
+            activePane.edit(first)
+        }
+        router.zipSelection = { operations.zipSelection(in: activePane) }
+        router.unzipSelection = {
+            guard let first = activePane.cursorItem() ?? activePane.selectedItems().first,
+                  first.isArchive else { return }
+            operations.unzip(first, in: activePane)
+        }
+        router.toggleMarkUnderCursor = { activePane.toggleMarkUnderCursorAndAdvance() }
+        router.groupSelect = { selecting in
+            groupPatternText = ""
+            groupSelecting = selecting
+            groupPatternPresented = true
+        }
+        router.showShortcuts = { shortcutsPresented = true }
         router.toggleHidden = {
             settings.showHidden.toggle()
             leftPane.reload()
@@ -112,6 +150,9 @@ struct ContentView: View {
         }
         router.clipboardPaste = {
             operations.pasteFromClipboard(into: activePane)
+        }
+        router.copyPath = {
+            activePane.copyPaths(of: activePane.selectedItems())
         }
         router.trashSelection = {
             operations.deleteSelection(in: activePane, mode: .trash)
@@ -161,6 +202,9 @@ private struct WindowDialogsModifier: ViewModifier {
     @Binding var newFolderPresented: Bool
     @Binding var newFilePresented: Bool
     @Binding var newName: String
+    @Binding var groupPatternPresented: Bool
+    @Binding var groupPatternText: String
+    let groupSelecting: Bool
     let activePane: PaneViewModel
 
     func body(content: Content) -> some View {
@@ -180,6 +224,16 @@ private struct WindowDialogsModifier: ViewModifier {
             .alert("action.newFile", isPresented: $newFilePresented) {
                 TextField("prompt.fileName", text: $newName)
                 Button("action.create") { activePane.createTextFile(named: newName) }
+                Button("common.cancel", role: .cancel) {}
+            }
+            .alert(
+                groupSelecting ? "select.group.select.title" : "select.group.deselect.title",
+                isPresented: $groupPatternPresented
+            ) {
+                TextField("prompt.pattern", text: $groupPatternText)
+                Button(groupSelecting ? "action.select" : "action.deselect") {
+                    activePane.selectGroup(matching: groupPatternText, select: groupSelecting)
+                }
                 Button("common.cancel", role: .cancel) {}
             }
             .confirmationDialog(
