@@ -7,7 +7,14 @@ Aplikacja **nie jest sandboxowana**, więc widzi cały dysk.
 
 ![FreeCommander na macOS](docs/screenshot-macos.png)
 
-## Funkcje (v0.2)
+## Pobieranie
+
+Gotowe wydania (plik `.dmg`) znajdziesz na stronie [Releases](https://github.com/milocha/FreeCommander/releases).
+Aplikacja podpisana ad-hoc (bez konta dewelopera) — przy pierwszym otwarciu pobranego
+pliku użyj prawego przycisku → **Otwórz**, albo w terminalu:
+`xattr -d com.apple.quarantine /Applications/FreeCommander.app`.
+
+## Funkcje (v0.3)
 
 - **Sidebar** (lewy panel): ulubione systemowe i **własne ulubione foldery** (gwiazdka
   w belce ścieżki dodaje bieżący folder), sekcja dysków z **paskiem zajętości** —
